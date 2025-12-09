@@ -1,0 +1,10 @@
+exclude bin/pandda.python
+exclude bin/pandda.ipython
+exclude bin/pandda.coot
+
+recursive-include lib-python/giant/templates *
+recursive-include lib-python/giant/resources *
+recursive-include lib-python/pandda/templates *
+recursive-include lib-python/pandda/resources *
+recursive-include lib-python/pandemic/templates *
+recursive-include lib-python/pandemic/resources *

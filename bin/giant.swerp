@@ -1,0 +1,1626 @@
+#!/usr/bin/env cctbx.python
+
+import giant.logs as lg
+logger = lg.getLogger(__name__)
+
+import os, sys, glob, shutil, itertools, json
+
+import logging as lg
+import numpy as np
+import pandas as pd
+import pathlib as pl
+
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+
+from mpl_toolkits.axes_grid.inset_locator import (
+    inset_axes,
+    InsetPosition,
+    mark_inset,
+    )
+
+# from scipy.interpolate import (
+#     make_interp_spline,
+#     BSpline,
+#     )
+
+import libtbx.phil
+from libtbx.utils import Sorry, Failure
+
+from giant.paths import (
+    rel_symlink
+    )
+
+############################################################################
+
+PROGRAM = 'giant.swerp'
+
+DESCRIPTION = """
+SWERP = SWeep Ensemble Refinement Parameters
+"""
+
+blank_arg_prepend = {
+  '.pdb':'input.pdb=',
+  '.mtz':'input.mtz=',
+  '.cif':'input.cif=',
+  '.sh':'sh_header=',
+  None:'out_dir=',
+}
+
+############################################################################
+
+master_phil = libtbx.phil.parse("""
+input {
+    pdb = None
+        .type = str
+    mtz = None
+        .type = str
+    cif = None
+        .type = str
+        .multiple = True
+    tls_selection = None
+        .type = str
+        .multiple = True
+    tls_pdb = None
+        .type = path
+    custom_arg = None
+        .type = str
+        .multiple = True
+}
+output {
+    out_dir = 'ensemble_refinement_sweep'
+        .type = str
+}
+sweep {
+    pTLS = None
+        .type = str
+        .multiple = True
+    wxray = None
+        .type = str
+        .multiple = True
+    tx = None
+        .type = str
+        .multiple = True
+    custom
+        .multiple = True
+    {
+        variable = None
+            .type = str
+            .multiple = False
+        value = None
+            .type = str
+            .multiple = True
+    }
+    repeat = 1
+        .type = int
+}
+options {
+    require_tls = True
+        .type = bool
+    sh_header = None
+        .type = path 
+    queue_cmd = 'qsub'
+        .type = str
+}
+""", process_includes=True)
+
+############################################################################
+
+def set_defaults_and_validate(params):
+
+    if (not params.sweep.pTLS):
+        params.sweep.pTLS = (0.6, 0.7, 0.8, 0.9)
+
+    if (not params.sweep.wxray): 
+        params.sweep.wxray = (2.5, 5.0, 7.5)
+
+    if (not params.sweep.tx):
+        params.sweep.tx = (0.25, 0.75, 1.00)
+
+    if (params.input.tls_pdb is not None):
+
+        if not os.path.exists(params.input.tls_pdb):
+            raise IOError('tls_pdb does not exist: {}'.format(params.input.tls_pdb))
+
+        params.sweep.pTLS = []
+
+    elif (params.options.require_tls is True): 
+
+        if len(params.input.tls_selection) == 0:
+
+            raise Sorry('No TLS selections provided (tls_selection=...).')
+
+    if not os.path.exists(params.input.pdb):
+
+        raise IOError('File does not exist: {}'.format(params.input.pdb))
+
+    if not os.path.exists(params.input.mtz):
+
+        raise IOError('File does not exist: {}'.format(params.input.mtz))
+
+    if params.input.cif:
+
+        for f in params.input.cif:
+
+            if not os.path.exists(f):
+
+                raise IOError('File does not exist: {}'.format(f))
+
+def extract_other_args(params):
+
+    other_args = []
+
+    ###
+
+    if (params.input.cif):
+
+        for f in params.input.cif:
+
+            other_args.append(
+                str(pl.Path(f).absolute())
+            )
+
+    ###
+
+    if (params.input.tls_pdb is not None):
+
+        other_args.append(
+            'import_tls_pdb="{}"'.format(
+                str(pl.Path(params.input.tls_pdb).absolute())
+            )
+        )
+
+    elif (params.input.tls_selection):
+
+        other_args.extend([
+            'tls_group_selections="{sel}"'.format(
+                sel = s,
+                )
+            for s in params.input.tls_selection
+            ]
+        )
+
+    ###
+
+    if (params.input.custom_arg):
+
+        other_args.extend(
+            params.input.custom_arg
+        )
+
+    return other_args
+
+def extract_parameter_sweep_args(params):
+
+    sparams = params.sweep
+
+    parameters_dict = {}
+
+    if len(sparams.pTLS) > 0:
+
+        parameters_dict['pTLS'] = (
+            map(float, sparams.pTLS)
+            )
+
+    if len(sparams.wxray) > 0:
+
+        parameters_dict['wxray'] = (
+            map(float, sparams.wxray)
+            )
+
+    if len(sparams.tx) > 0:
+
+        parameters_dict['tx'] = (
+            map(float, sparams.tx)
+            )
+
+    for cparams in sparams.custom:
+
+        parameters_dict[cparams.variable] = (
+            cparams.value
+            )
+
+    return parameters_dict
+
+#####
+
+
+class ProcessERRunOutput:
+
+    png_name = 'simulation_rfactors.png'
+
+    def __init__(self):
+
+        pass
+
+    def __call__(self, er_run):
+
+        logger(
+            'Writing output for {dir_path}'.format(
+                dir_path = str(er_run.dir_path),
+                )
+            )
+
+        png_path = (
+            er_run.dir_path / self.png_name
+            )
+
+        if png_path.exists():
+            logger(
+                '\tAlready made {png_path}'.format(
+                    png_path = str(png_path),
+                    )
+                )
+
+        else:
+            logger(
+                'Making R-factor plot: {png_path}'.format(
+                    png_path = str(png_path),
+                    )
+                )
+
+            r_factors_table = er_run.get_all_rfactors()
+
+            self.make_png(
+                r_factors_table,
+                png_path,
+                )
+
+    def make_png(self, r_factors_table, png_path):
+
+        # Create plots with pre-defined labels.
+        time         = r_factors_table['time (s)'].values
+        current_work = r_factors_table['Current R-work'].values
+        current_free = r_factors_table['Current R-free'].values
+        running_work = r_factors_table['Rolling R-work'].values
+        running_free = r_factors_table['Rolling R-free'].values
+        total_work   = r_factors_table['Total R-work'].values
+        total_free   = r_factors_table['Total R-free'].values
+
+        # Plot
+        plot_args = {
+            'markersize':5,
+            'linewidth':1,
+            'markevery':range(0,len(time),int(len(time)/10-1)),
+            'markerfacecolor':'k',
+            'markeredgecolor':'k',
+            }
+
+        fig, ax = plt.subplots()
+        ax.plot(time, current_free, 'b-', label='Current R-free', alpha=0.5,  **plot_args)
+        ax.plot(time, current_work, 'r-', label='Current R-work', alpha=0.5,  **plot_args)
+        ax.plot(time, running_free, 'b-', label='Rolling R-free', marker='|', **plot_args)
+        ax.plot(time, running_work, 'r-', label='Rolling R-work', marker='|', **plot_args)
+        ax.plot(time, total_free,   'b-', label='Total R-free',   marker='.', **plot_args)
+        ax.plot(time, total_work,   'r-', label='Total R-work',   marker='.', **plot_args)
+
+        plt.title('Simulation R-values')
+        plt.xlabel('Time (ps)')
+        plt.ylabel('R-factor')
+
+        # (Show variance in legend)
+        plt.legend(
+            [
+            'Curr. R-free',
+            '{0} (RMS {1:.3f}%)'.format('Curr. R-work', current_work.std()),
+            'Roll. R-free',
+            '{0} (RMS {1:.3f}%)'.format('Roll. R-work', running_work.std()),
+            'Total R-free',
+            'Total R-work',
+            ],
+            loc = 'upper left',
+            bbox_to_anchor = (1.0, 1.0),
+            )
+
+        plt.tight_layout()
+        plt.savefig(str(png_path), dpi=200)
+        plt.close(fig)
+
+
+class FitPolynomialTrendline:
+
+    def __init__(self,
+        min_degree=1,
+        max_degree=5,
+        n_cross_validation=10,
+        r_diff_cutoff = 2.0, # above median
+        r_fitt_cutoff = 0.5, # below prediction
+        ):
+
+        self.min_degree = int(min_degree)
+        self.max_degree = int(max_degree)
+        self.n_cross_validation = int(n_cross_validation)
+
+        self.r_diff_cutoff = float(r_diff_cutoff)
+        self.r_fitt_cutoff = float(r_fitt_cutoff)
+
+        self.n_initial_cycle = 5
+        self.n_main_cycle = 5
+
+    def __call__(self, x, y):
+
+        for i in range(self.n_initial_cycle):
+
+            diffs = (
+                x - y
+                )
+
+            # Rejection selection
+            sel = (
+                (diffs - np.median(diffs)) > self.r_diff_cutoff
+                )
+
+            x = x[~sel]
+            y = y[~sel]
+
+            logger(((sel).sum(), sel.size))
+
+            if sel.sum() == 0:
+                break
+
+        for i in range(self.n_main_cycle):
+
+            fit = self.fit(x,y)
+
+            diffs = (
+                fit.predict(x[:,np.newaxis]) - y
+                )
+
+            # Rejection selection
+            sel = (
+                diffs > self.r_fitt_cutoff
+                )
+
+            x = x[~sel]
+            y = y[~sel]
+
+            logger((sel.sum(), sel.size))
+
+            if sel.sum() == 0:
+                break
+
+        fit = self.fit(x,y)
+
+        return fit
+
+    def fit(self, x, y):
+
+        from sklearn.pipeline import Pipeline
+        from sklearn.preprocessing import PolynomialFeatures
+        from sklearn.linear_model import LinearRegression
+        from sklearn.model_selection import cross_val_score
+
+        max_score = -1e10
+        best_pipeline = None
+
+        for degree in range(self.min_degree,self.max_degree+1):
+
+            polynomial_features = PolynomialFeatures(degree=degree, include_bias=False)
+
+            linear_regression = LinearRegression()
+
+            pipeline = Pipeline(
+                [
+                    ("polynomial_features", polynomial_features),
+                    ("linear_regression", linear_regression),
+                ]
+            )
+
+            pipeline.fit(x[:,np.newaxis], y)
+
+            # Evaluate the models using crossvalidation
+            scores = cross_val_score(
+                pipeline, x[:,np.newaxis], y, scoring="neg_mean_squared_error", cv=self.n_cross_validation,
+            )
+
+            logger((degree, scores.mean()))
+
+            if scores.mean() > max_score:
+
+                max_score = scores.mean()
+                best_pipeline = pipeline
+
+        return best_pipeline
+
+
+class ERSweepWrangler(object):
+
+    RFACTOR_TABLE_COLUMNS = [
+        'label',
+        'R-work',
+        'R-free',
+        'Rf/Rw',
+        'Rf-Rw',
+    ]
+
+    RFREE_KEY = 'R-free'
+    RWORK_KEY = 'R-work'
+    RDIFF_KEY = 'Rf-Rw'
+    RRATO_KEY = 'Rf/Rw'
+
+
+class SelectBestModel(ERSweepWrangler):
+
+    scatter_plot_png_name = 'ensemble_rfree_vs_rwork_all.png'
+    distribution_plot_png_name = 'ensemble_rfree_rwork_distributions.png'
+
+    def __init__(self,
+        fit_trendline = None,
+        ):
+
+        self.fit_trendline = (
+            fit_trendline
+            if fit_trendline is not None
+            else FitPolynomialTrendline()
+            )
+
+    def __call__(self, er_sweep, r_factors_table):
+
+        r_factors_table = r_factors_table.reset_index()
+
+        trendline = self.fit_trendline(
+            x = np.array(r_factors_table[self.RFREE_KEY].values),
+            y = np.array(r_factors_table[self.RWORK_KEY].values),
+            )
+
+        best_row = self.find_best_dataset(
+            trendline = trendline,
+            r_factors_table = r_factors_table,
+            )
+
+        self.make_model_selection_plots(
+            er_sweep = er_sweep,
+            trendline = trendline,
+            r_factors_table = r_factors_table,
+            selected_row = best_row,
+            )
+
+        return best_row
+
+    def find_best_dataset(self, trendline, r_factors_table):
+
+        r_factors_table = r_factors_table.sort_values(by=[self.RFREE_KEY])
+
+        r_free_all = r_factors_table[self.RFREE_KEY]
+
+        r_free_cutoffs = np.arange(
+            r_free_all.min()+0.5,
+            r_free_all.max()+0.5,
+            0.5,
+            )
+
+        for r_free_cut in r_free_cutoffs:
+
+            table = r_factors_table[r_free_all < r_free_cut]
+
+            rf = np.array(table[self.RFREE_KEY].values)
+            rw = np.array(table[self.RWORK_KEY].values)
+
+            rw_pred = trendline.predict(rf[:,np.newaxis])
+
+            # Want to be large
+            rw_diff = (rw - rw_pred)
+
+            # Need to be within 0.1 of the line or greater
+            if rw_diff.max() < -0.1:
+                continue
+
+            i_sel = np.where(rw_diff == rw_diff.max())[0][0]
+
+            best_sel = table.iloc[i_sel]
+
+            break
+
+        return best_sel
+
+    def make_model_selection_plots(self, er_sweep, trendline, r_factors_table, selected_row):
+
+        png_path = (
+            er_sweep.dir_path / self.scatter_plot_png_name
+            )
+
+        self.make_rwork_rfree_scatter_plot(
+            table = r_factors_table,
+            trendline = trendline,
+            selected_row = selected_row,
+            png_path = png_path,
+            )
+
+        png_path = (
+            er_sweep.dir_path / self.distribution_plot_png_name
+            )
+
+        self.make_rwork_rfree_distribution_plot(
+            table = r_factors_table,
+            png_path = png_path,
+            )
+
+    def make_rwork_rfree_distribution_plot(self, table, png_path):
+
+        fig = plt.figure()
+
+        for i, col in enumerate([
+            self.RFREE_KEY,
+            self.RWORK_KEY,
+            self.RDIFF_KEY,
+            self.RRATO_KEY,
+            ]):
+
+            values = table[col].values
+
+            ax1 = plt.subplot(2,2,i+1)
+
+            ax1.hist(
+                values,
+                bins = 30,
+                )
+
+            ax1.axvline(np.mean(values), color='black')
+            ax1.axvline(np.median(values), color='red')
+
+            ax1.set_xlabel(col)
+
+        plt.tight_layout()
+        plt.savefig(str(png_path), dpi=200)
+        plt.close(fig)
+
+    def make_rwork_rfree_scatter_plot(self, table, trendline, selected_row, png_path):
+
+        fig = plt.figure()
+
+        ### Make axes (inc. inset) ###
+
+        ax1 = plt.subplot(1,1,1)
+
+        ax2 = plt.axes([0,0,1,1])
+        ax2.set_axes_locator(
+            InsetPosition(ax1, [0.6, 0.1, 0.3, 0.4])
+            )
+        mark_inset(ax1, ax2, loc1=2, loc2=4, fc="none", ec='0.5')
+
+        ax2.yaxis.set_label_position("right")
+        ax2.yaxis.tick_right()
+
+        ###
+
+        x = np.array(table[self.RFREE_KEY].values)
+        y = np.array(table[self.RWORK_KEY].values)
+
+        ###
+
+        plot_args = {
+            'alpha' : 1,
+            's' : 1,
+            'c' : 'blue',
+        }
+
+        ax1.scatter(
+            x=x,
+            y=y,
+            label = 'Individual Runs',
+            **plot_args
+            )
+
+        xnew = np.linspace(x.min(), x.max(), 200)
+        ynew = trendline.predict(xnew[:, np.newaxis])
+
+        ax1.plot(
+            xnew,
+            ynew,
+            '-',
+            label = 'Fitted trendline',
+            )
+
+        ax1.set_xlabel('R-free', labelpad=6)
+        ax1.set_ylabel('R-work', labelpad=6)
+
+        ### Inset ###
+
+        smol_x_sel = (x < (x.min() + 0.5))
+        smol_x = x[smol_x_sel]
+        smol_y = y[smol_x_sel]
+
+        ax2.scatter(
+            x=smol_x,
+            y=smol_y,
+            **plot_args
+            )
+
+        xnew = np.linspace(smol_x.min(), smol_x.max(), 200)
+        ynew = trendline.predict(xnew[:, np.newaxis])
+
+        ax2.plot(
+            xnew,
+            ynew,
+            '-',
+            )
+
+        ###
+
+        if selected_row is not None:
+
+            s_r = selected_row
+
+            plot_args = {'s':25, 'color':None, 'edgecolors':'black'}
+
+            ax1.scatter([s_r[self.RFREE_KEY]],[s_r[self.RWORK_KEY]], label='Selected Model', **plot_args)
+            ax2.scatter([s_r[self.RFREE_KEY]],[s_r[self.RWORK_KEY]], **plot_args)
+
+        ax1.legend(loc='upper left')
+
+        ###
+
+        # plt.tight_layout()
+        plt.savefig(str(png_path), dpi=200)
+        plt.close(fig)
+
+
+class MakeParameterSurfacePlots(ERSweepWrangler):
+
+    surface_plot_png_name = 'ensemble_rfree_vs_parameters.png'
+
+    def __init__(self):
+
+        pass
+
+    def __call__(self, er_sweep, r_factors_table):
+
+        self.make_parameter_plots(
+            er_sweep = er_sweep,
+            r_factors_table = r_factors_table.reset_index(),
+            )
+
+    def make_parameter_plots(self, er_sweep, r_factors_table):
+
+        columns = list(r_factors_table.columns)
+
+        for c in self.RFACTOR_TABLE_COLUMNS:
+            columns.remove(c)
+
+        # Remove columns with no dimension
+
+        n_vals = {
+            c : len(set(r_factors_table[c].values))
+            for c in columns
+        }
+
+        columns = [
+            c for (c,v) in n_vals.items()
+            if v > 1
+            ]
+
+        # Order columns
+
+        ordering = {
+            'pTLS':1,
+            'wxray':2,
+            'tx':3,
+            }
+
+        columns = sorted(
+            columns,
+            key = lambda x: (ordering.get(x,0),x)
+            )
+
+        png_path = (
+            er_sweep.dir_path / self.surface_plot_png_name
+            )
+
+        png_root = (
+            png_path.parent / png_path.stem
+            )
+
+        plot_list = []
+
+        self._make_parameter_plots_nested(
+            table = r_factors_table,
+            columns = columns,
+            png_root = png_root,
+            plot_list = plot_list,
+            plot_labs = [],
+            )
+
+        return plot_list
+
+    def _make_parameter_plots_nested(self,
+        table,
+        columns,
+        png_root,
+        plot_list,
+        plot_labs,
+        ):
+
+        if len(columns) == 1:
+
+            # 1d plot
+
+            png_path = str(png_root)+'.png'
+
+            self.make_line_plot(
+                table = table,
+                column = columns[0],
+                png_path = png_path,
+                )
+
+            plot_list.append(
+                (plot_labs, png_path)
+                )
+
+        elif len(columns) == 2:
+
+            # 2d plot
+
+            png_path = str(png_root)+'.png'
+
+            self.make_surface_plot(
+                table = table,
+                columns = columns,
+                png_path = png_path,
+                )
+
+            plot_list.append(
+                (plot_labs, png_path)
+                )
+
+        else:
+
+            # Loop one variable and repeat nesting
+
+            l_col = columns[0]
+            l_vals = sorted(set(table[l_col].values))
+            r_cols = columns[1:]
+
+            for l_val in l_vals:
+
+                plot_labs_nest = list(plot_labs) + [(l_col,l_val)]
+
+                self._make_parameter_plots_nested(
+                    table = table.loc[table[l_col]==l_val],
+                    columns = r_cols,
+                    png_root = (
+                        str(png_root)+'-{c}-{v}'.format(
+                            c = str(l_col),
+                            v = str(l_val),
+                            )
+                        ),
+                    plot_list = plot_list,
+                    plot_labs = plot_labs_nest,
+                    )
+
+        return None
+
+    def make_line_plot(self,
+        table,
+        column,
+        png_path,
+        ):
+
+        pltx = str(column)
+
+        fig, ax = plt.subplots()
+
+        table = table.sort_values(by=[pltx])
+
+        # Make data.
+        x = np.array(table[pltx].values, dtype=float)
+        y = np.array(table['R-free'].values, dtype=float)
+
+        ###
+
+        # Plot the line
+        ax.plot(x, y)
+
+        ax.set_xlabel(pltx.upper())
+        ax.set_ylabel('$R_{free}$')
+
+        plt.tight_layout()
+        plt.savefig(str(png_path), dpi=200)
+        plt.close(fig)
+
+    def make_surface_plot(self,
+        table,
+        columns,
+        png_path,
+        ):
+
+        assert len(columns) == 2
+
+        pltx = str(columns[0])
+        plty = str(columns[1])
+
+        from matplotlib import cm
+        from matplotlib.ticker import LinearLocator
+        from mpl_toolkits.mplot3d import Axes3D
+
+        fig = plt.figure()
+        ax1 = plt.subplot(2,2,2,projection='3d', azim=0, elev=0)
+        ax2 = plt.subplot(2,2,1,projection='3d', azim=0, elev=90)
+        ax3 = plt.subplot(2,2,3,projection='3d')
+        ax4 = plt.subplot(2,2,4,projection='3d', azim=120)
+
+        table = table.sort_values(by=[plty, pltx])
+
+        # Make data.
+        x = np.array(table[pltx].values, dtype=float)
+        y = np.array(table[plty].values, dtype=float)
+        z = np.array(table['R-free'].values, dtype=float)
+
+        ###
+
+        for ax in [ax1, ax2, ax3, ax4]:
+
+            # Plot the surface.
+            surf = ax.plot_trisurf(
+                x, y, z,
+                cmap=cm.jet,
+                linewidth=0.1,
+                )
+            ax.set_xlabel(pltx.upper())
+
+            if ax is ax1:
+                ax.set_ylabel(plty.upper(), labelpad=6)
+            elif ax is ax2:
+                ax.set_ylabel(plty.upper(), labelpad=12)
+            else:
+                ax.set_ylabel(plty.upper())
+
+            # Only one heatmap
+            if ax is ax2:
+                # Add a color bar which maps values to colors.
+                fig.colorbar(
+                    surf,
+                    ax=ax2,
+                    shrink=0.65,
+                    aspect=20,
+                    )
+
+        # Only one needs the z-label
+        ax1.set_zlabel('$R_{free}$')
+
+        fig.text(
+            0.42, 0.59, '$R_{free}$',
+            ha='right', va='top',
+            )
+        fig.text(
+            0.47, 0.45, '$R_{free}$',
+            ha='right', va='top',
+            )
+        fig.text(
+            0.97, 0.45, '$R_{free}$',
+            ha='right', va='top',
+            )
+        # ax4.set_zlabel('$R_{free}$')
+
+        # Hide some labels
+        ax1.set_xlabel('')
+        ax1.set_xticks([])
+        ax2.set_zlabel('')
+        ax2.set_zticks([])
+
+        ax1.margins(0.1)
+
+        plt.tight_layout()
+        plt.savefig(str(png_path), dpi=200)
+        plt.close(fig)
+
+
+class ProcessERSweepOutput(ERSweepWrangler):
+
+    results_csv_name = 'ensemble_sweep_results.csv'
+
+    best_name = 'best'
+
+    def __init__(self):
+
+        self.select_best_model = SelectBestModel()
+
+        self.make_parameter_plots = MakeParameterSurfacePlots()
+
+    def __call__(self, er_sweep):
+
+        er_runs = [
+            r for r in er_sweep.get_runs()
+            if r.is_finished()
+            ]
+
+        final_rfactors = self.extract_final_rfactors(
+            er_runs = er_runs,
+            )
+
+        # need to select minimum for multiple repeats, or modify plotting function
+
+        self.show_results(
+            r_factors_table = final_rfactors,
+            )
+
+        self.write_csv(
+            er_sweep = er_sweep,
+            r_factors_table = final_rfactors,
+            )
+
+        ##
+
+        self.make_parameter_plots(
+            er_sweep = er_sweep,
+            r_factors_table = final_rfactors,
+            )
+
+        ##
+
+        best_row = self.select_best_model(
+            er_sweep = er_sweep,
+            r_factors_table = final_rfactors,
+            )
+
+        best_run = self.link_best(
+            er_sweep = er_sweep,
+            best_run = er_sweep.get(best_row['label']),
+            )
+
+        return best_run
+
+    def extract_final_rfactors(self, er_runs):
+
+        all_run_data = []
+
+        for er_run in er_runs:
+
+            run_data = {
+                'label' : er_run.dir_path.name
+                }
+
+            run_data.update(
+                er_run.get_final_rfactors()
+                )
+
+            run_data.update(
+                er_run.get_meta()['sweep_variables']
+                )
+
+            all_run_data.append(run_data)
+
+        r_factors_table = pd.DataFrame(
+            all_run_data
+            )
+
+        ###
+
+        all_columns = list(r_factors_table.columns)
+
+        for c in self.RFACTOR_TABLE_COLUMNS:
+            all_columns.remove(c)
+
+        # reorder columns
+        r_factors_table = (
+            r_factors_table[self.RFACTOR_TABLE_COLUMNS+all_columns]
+            )
+
+        ###
+
+        r_factors_table = r_factors_table.set_index('label')
+
+        return r_factors_table
+
+    def show_results(self, r_factors_table):
+
+        table = r_factors_table
+
+        logger.subheading('Unsorted Results')
+        logger(table)
+
+        logger.subheading('Sorted (R-work)')
+        logger(table.sort_values(self.RWORK_KEY, ascending=False))
+
+        logger.subheading('Sorted (R-free)')
+        logger(table.sort_values(self.RFREE_KEY, ascending=False))
+
+        logger.subheading('Summary statistics (all)')
+        filt_cols = [self.RWORK_KEY, self.RFREE_KEY, self.RRATO_KEY, self.RDIFF_KEY]
+        filt_rows = [ 'count', 'min', '25%', '50%', '75%', 'max', 'mean', 'std']
+        desc = table.describe()
+        desc = desc.loc[filt_rows]
+        desc = desc[filt_cols]
+        try:
+            import tabulate
+            logger(tabulate.tabulate(desc.T, headers='keys', tablefmt='psql'))
+        except:
+            logger(str(desc))
+        logger('')
+
+        logger.subheading('Summary statistics (some)')
+        filt_cols = [self.RWORK_KEY, self.RFREE_KEY, self.RRATO_KEY, self.RDIFF_KEY]
+        filt_rows = ['min', 'mean', 'max', 'std']
+        desc = table.describe()
+        desc = desc.loc[filt_rows]
+        desc = desc[filt_cols]
+        try:
+            import tabulate
+            logger(tabulate.tabulate(desc.T, headers='keys', tablefmt='psql'))
+        except:
+            logger(str(desc.T))
+        logger('')
+
+    def write_csv(self, er_sweep, r_factors_table):
+
+        csv_path = (
+            er_sweep.dir_path / self.results_csv_name
+            )
+
+        r_factors_table.to_csv(
+            str(csv_path)
+            )
+
+    def link_best(self, er_sweep, best_run):
+
+        logger.subheading('Linking/copying best output structure')
+
+        best_path = (
+            er_sweep.dir_path / self.best_name
+            )
+
+        best_dir = (
+            best_run.dir_path
+            )
+
+        # assumes that label column contains the names of the dirs
+        assert best_dir.exists()
+
+        if best_path.is_dir():
+            shutil.rmtree(str(best_path))
+        elif best_path.is_symlink():
+            best_path.unlink()
+        elif best_path.exists():
+            logger.warning(
+                '{} exists but is not a directory -- cannot link best directory'.format(
+                    str(best_path)
+                    )
+                )
+            return None
+
+        logger(
+            'Copying best R-free simulation: \n\t{best} -> \n\t{link}'.format(
+                best = str(best_dir),
+                link = str(best_path),
+                )
+            )
+
+        shutil.copytree(
+            str(best_dir),
+            str(best_path),
+            )
+
+        return er_sweep.run_manager.ERRunClass(best_dir)
+
+
+class PostProcessERSweep:
+
+    def __init__(self):
+
+        self.make_run_output = ProcessERRunOutput()
+        self.make_sweep_output = ProcessERSweepOutput()
+
+    def __call__(self, er_sweep):
+
+        finished_runs = []
+
+        logger.heading('Getting finished runs')
+
+        for er_run in er_sweep.get_runs():
+
+            er_run.show_status()
+
+            if er_run.is_finished():
+
+                finished_runs.append(er_run)
+
+        if len(finished_runs) == 0:
+
+            logger('No finished runs')
+
+            return None
+
+        logger.heading('Writing Run Outputs')
+
+        for er_run in finished_runs:
+
+            self.make_run_output(
+                er_run = er_run,
+                )
+
+        logger.heading('Writing Sweep Outputs')
+
+        self.make_sweep_output(
+            er_sweep = er_sweep,
+            )
+
+
+#####
+
+
+class ERRun:
+
+    _input_pdb_name = "input.pdb"
+    _input_mtz_name = "input.mtz"
+
+    _shell_name = "run.sh"
+    _json_name = "run_info.json"
+
+    def __init__(self, dir_path):
+
+        self.dir_path = dir_path
+
+        self.input_pdb_path = (
+            self.dir_path / self._input_pdb_name
+            )
+
+        self.input_mtz_path = (
+            self.dir_path / self._input_mtz_name
+            )
+
+        self.shell_path = (
+            self.dir_path / self._shell_name
+            )
+
+        self.json_path = (
+            self.dir_path / self._json_name
+            )
+
+        self.ensemble_pdb_path = (
+            self.input_pdb_path.parent / (self.input_pdb_path.stem + '_ensemble.pdb.gz')
+            )
+
+        self.ensemble_mtz_path = (
+            self.input_pdb_path.parent / (self.input_pdb_path.stem + '_ensemble.pdb.gz')
+            )
+
+        self.log_path = (
+            self.input_pdb_path.parent / (self.input_pdb_path.stem + '_ensemble.log')
+            )
+
+    def __str__(self):
+
+        s = (
+            'ER run\n'
+            '\tDirectory: {dir_path}\n'
+            '\tParameters: \n\t{param_json}\n'
+            ).format(
+                dir_path = str(self.dir_path),
+                param_json = (
+                    json.dumps(self.get_meta(),indent=2)
+                    ).replace(
+                    '\n','\n\t'
+                    ),
+            )
+
+        return s
+
+    def exists(self):
+
+        if self.dir_path.exists():
+            return True
+
+        return False
+
+    def is_finished(self):
+
+        if self.ensemble_pdb_path.exists():
+            return True
+        else:
+            return False
+
+    def get_meta(self):
+
+        if self.json_path.exists():
+            return json.loads(
+                open(str(self.json_path),'r').read()
+                )
+        else:
+            return None
+
+    def get_final_rfactors(self):
+
+        log_string = open(str(self.log_path), 'r').read()
+
+        log_data = (
+            log_string[log_string.find('FINAL R'):].split('\n')[0].split()
+            )
+
+        # label = os.path.basename(os.path.dirname(log_file))
+        rwork = float(log_data[3])
+        rfree = float(log_data[6])
+        ratio = float(log_data[9])
+        rdiff = (rfree - rwork)
+
+        return {
+            'R-work' : 100.*rwork,
+            'R-free' : 100.*rfree,
+            'Rf/Rw' : ratio,
+            'Rf-Rw' : 100.*rdiff,
+        }
+
+    def get_all_rfactors(self):
+
+        assert self.is_finished()
+
+        ER_LOG_COLUMNS = [
+            'step',
+            'time (s)',
+            'time (%)',
+            'Current R-work',
+            'Current R-free',
+            'Rolling R-work',
+            'Rolling R-free',
+            'Total R-work',
+            'Total R-free',
+            'Temperature (K)',
+            'WXRAY COL1',
+            'WXRAY COL2',
+        ]
+
+        log_string = open(str(self.log_path), 'r').read()
+
+        lines = log_string.split('\n')
+
+        ncols = len(ER_LOG_COLUMNS)
+
+        results = []
+        for line in lines:
+            if line and (line[0] == '~'):
+                line = line.replace('~', '').replace('|', '').split()
+                if len(line) == ncols:
+                    results.append(line)
+
+        results_df = pd.DataFrame(
+            columns = ER_LOG_COLUMNS,
+            data = np.array(results, dtype=float),
+            )
+
+        return results_df
+
+    def show_status(self):
+
+        if self.is_finished():
+            status = 'done'
+        else:
+            status = '    '
+
+        logger(status + ' ' + str(self.dir_path.name))
+
+
+class ERRunManager:
+
+    parameter_name_hash = {
+        'wxray' : 'wxray_coupled_tbath_offset',
+        'pTLS' : 'ptls',
+        'tx' : 'tx',
+    }
+
+    shell_template = (
+    "cd {dir_path}\n"
+    "cp {input_pdb} {er_input_pdb}\n"
+    "cp {input_mtz} {er_input_mtz}\n"
+    "phenix.ensemble_refinement \\\n"
+    "  {er_input_pdb} {er_input_mtz} {args} \n"
+    )
+
+    def __init__(self,
+        dir_path,
+        ):
+
+        self.dir_path = dir_path
+
+        self.ERRunClass = ERRun
+
+    def setup(self,
+        shell_header = None,
+        ):
+
+        self.shell_header = (
+            shell_header
+            if shell_header is not None
+            else "#!/usr/bin/env bash"
+            )
+
+    def make(self,
+        input_pdb,
+        input_mtz,
+        parameter_dict,
+        other_args = None,
+        ):
+
+        # For finding the next folder 
+        repeat_no = 0
+
+        while True:
+
+            repeat_no += 1
+
+            dir_label = '-'.join(
+                [
+                "{k}-{v}".format(
+                    k=str(k).strip(' '),
+                    v=str(v).strip(' '),
+                    )
+                for k,v in sorted(parameter_dict.items())
+                ]
+            ) + (
+            '-{repeat_no}'.format(repeat_no=repeat_no)
+            )
+
+            dir_path = (
+                self.dir_path / dir_label
+                )
+
+            if not dir_path.exists():
+                break
+
+        dir_path.mkdir(parents=True)
+
+        er_run = self.ERRunClass(dir_path)
+
+        args = sorted([
+            "{key}={val}".format(
+                key = self.parameter_name_hash.get(k,k),
+                val = str(v),
+                )
+            for k,v in parameter_dict.items()
+            ])
+
+        if other_args is not None:
+            args.extend(list(other_args))
+
+        json_data = {
+            'sweep_variables' : parameter_dict,
+            'other_arguments' : other_args,
+            'repeat' : repeat_no,
+        }
+
+        shell_content = self.shell_template.format(
+            dir_path = str(dir_path.absolute()),
+            input_pdb = str(input_pdb.absolute()),
+            input_mtz = str(input_mtz.absolute()),
+            args = (
+                ""
+                if len(args) == 0
+                else " \\\n  ".join([""]+args)
+                ),
+            er_input_pdb = er_run._input_pdb_name,
+            er_input_mtz = er_run._input_mtz_name,
+            )
+
+        with open(str(er_run.shell_path), 'w') as fh:
+
+            if self.shell_header is not None:
+                fh.write(
+                    str(self.shell_header)+'\n\n'
+                    )
+
+            fh.write(
+                shell_content + '\n'
+                )
+
+        with open(str(er_run.json_path), 'w') as fh:
+            fh.write(
+                json.dumps(json_data, indent=2),
+                )
+
+        logger(
+            'Prepared: \n{er_run}'.format(
+                er_run = str(er_run),
+                )
+            )
+
+        return er_run
+
+    def get_all(self):
+
+        er_runs = [
+            self.ERRunClass(d)
+            for d in sorted(
+                self.dir_path.glob('*')
+                )
+            ]
+
+        return er_runs
+
+    def get(self, label, check_exists=True, check_finished=False):
+
+        er_run = self.ERRunClass(
+            dir_path = self.dir_path / label
+            )
+
+        if bool(check_exists) is True:
+            assert er_run.exists()
+
+        if bool(check_finished) is True:
+            assert er_run.is_finished()
+
+        return er_run
+
+
+class ERSweepManager:
+
+    master_shell_name = 'run_all.sh'
+    sweep_dir_name = 'sweep_dirs'
+
+    def __init__(self, dir_path):
+
+        self.dir_path = dir_path
+
+        self.master_shell_path = (
+            self.dir_path / self.master_shell_name
+            )
+
+        self.run_manager = ERRunManager(
+            dir_path = (
+                self.dir_path / self.sweep_dir_name
+                ),
+            )
+
+        self._update_sweep = PostProcessERSweep()
+
+    def setup(self,
+        shell_header = None,
+        submit_command = None,
+        ):
+
+        self.run_manager.setup(
+            shell_header = shell_header,
+            )
+
+        self.submit_command = (
+            submit_command
+            if submit_command is not None
+            else "."
+            )
+
+    def make(self,
+        input_pdb,
+        input_mtz,
+        parameters_dict,
+        other_args,
+        repeat=1,
+        ):
+
+        logger(
+            'Extracted sweep parameters: {params_json}'.format(
+                params_json = json.dumps(parameters_dict, indent=2),
+                )
+            )
+
+        parameter_combinations = [
+            dict(t)
+            for t in itertools.product(*[
+                [(k,v) for v in vv]
+                for k,vv in parameters_dict.items()
+                ])
+            ]
+
+        er_runs = []
+
+        for i_repeat in range(repeat):
+            
+            for p_dict in parameter_combinations:
+
+                er_run = self.run_manager.make(
+                    input_pdb = input_pdb,
+                    input_mtz = input_mtz,
+                    parameter_dict = p_dict,
+                    other_args = other_args,
+                    )
+
+                er_runs.append(
+                    er_run
+                    )
+
+        with open(str(self.master_shell_path),'a') as fh:
+
+            fh.write(
+                ''.join([
+                    "{cmd} {sh}\n".format(
+                        cmd = self.submit_command,
+                        sh = str(er_run.shell_path.absolute()),
+                        )
+                    for er_run in er_runs
+                ])
+            )
+
+        return er_runs
+
+    def update_results(self):
+
+        return self._update_sweep(self)
+
+    def get_runs(self):
+
+        return self.run_manager.get_all()
+
+    def get(self, label):
+
+        return self.run_manager.get(label)
+
+    def run(self):
+
+        os.system("chmod +x {}".format(self.master_shell.absolute()))
+        os.system("{}".format(self.master_shell.absolute()))
+
+
+###
+
+
+def run(params):
+
+    from giant.logs import setup_logging
+
+    out_dir = pl.Path(params.output.out_dir)
+
+    new_sweep = bool(
+        not out_dir.exists()
+        )
+
+    if not out_dir.exists():
+        out_dir.mkdir(parents=True)
+
+    logger = setup_logging(
+        name = __name__, # setup root logging for __name__ == __main__
+        log_file = str(out_dir / 'swerp.log'),
+        warning_handler_name = 'warnings',
+        debug = False,
+    )
+
+    er_sweep = ERSweepManager(
+        dir_path = out_dir,
+        )
+
+    if (new_sweep is True):
+
+        set_defaults_and_validate(params)
+
+        er_sweep.setup(
+            shell_header = (
+                open(params.options.sh_header, 'r').read()
+                if params.options.sh_header is not None
+                else None
+                ),
+            submit_command = (
+                params.options.queue_cmd
+                if params.options.queue_cmd is not None
+                else None
+                ),
+            )
+
+        er_sweep.make(
+            input_pdb = pl.Path(params.input.pdb),
+            input_mtz = pl.Path(params.input.mtz),
+            parameters_dict = extract_parameter_sweep_args(
+                params = params,
+                ),
+            other_args = extract_other_args(
+                params = params,
+                ),
+            repeat = int(params.sweep.repeat),
+            )
+
+    else: 
+
+        er_sweep.update_results()
+
+
+#######################################
+
+if __name__=='__main__':
+
+    from giant.logs import setup_root_logging
+    setup_root_logging()
+
+    from giant.jiffies import run_default
+
+    run_default(
+        run                 = run,
+        master_phil         = master_phil,
+        args                = sys.argv[1:],
+        blank_arg_prepend   = blank_arg_prepend,
+        program             = PROGRAM,
+        description         = DESCRIPTION,
+    )

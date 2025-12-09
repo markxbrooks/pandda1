@@ -1,0 +1,28 @@
+
+exec_dir=$(cd "$(dirname "${0}")" && pwd)
+
+pandda_dir=$(dirname "$exec_dir")
+
+ccp4-python -m pip uninstall panddas -y
+
+# install fresh pandda
+(cd $pandda_dir && ccp4-python setup.py install)
+
+cootpython="$CCP4/coot_py2/libexec/python"
+
+$cootpython -m ensurepip
+$cootpython -m pip install \
+	numpy==1.16.6
+$cootpython -m pip install \
+	pandas==0.21.1
+$cootpython -m pip install \
+	matplotlib==2.2.5
+$cootpython -m pip install \
+	procrunner==1.1.0 \
+	pathlib==1.0.1
+
+
+# Clean up old scripts
+rm $CCP4/bin/{giant,pandda,pandemic}*
+# Replace with new ones
+cp $pandda_dir/bin/* $CCP4/bin/

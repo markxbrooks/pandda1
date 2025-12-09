@@ -1,0 +1,138 @@
+pandda {
+  input {
+    data_dirs = None
+    pdb_style = "final.pdb"
+    mtz_style = None
+    lig_style = "*.cif"
+    regex {
+      dir_regex = None
+      pdb_regex = None
+      mtz_regex = None
+    }
+    filter {
+      pdb = None
+    }
+    reference {
+      pdb = None
+      mtz = None
+    }
+    flags {
+      ignore_datasets = None
+      only_datasets = None
+      ground_state_datasets = None
+      exclude_from_z_map_analysis = None
+      exclude_from_characterisation = None
+      test = None
+      train = None
+      not_test = None
+      not_train = None
+    }
+  }
+  output {
+    out_dir = "./pandda"
+    overwrite = False
+    dataset_prefix = ""
+    output_maps_for = all *events first_dataset_only
+  }
+  params {
+    analysis {
+      high_res_increment = 0.05
+      high_res_upper_limit = 0
+      high_res_lower_limit = 4
+    }
+    diffraction_data {
+      structure_factors = "2FOFCWT_iso-fill,PH2FOFCWT_iso-fill" "FWT,PHWT" \
+                          "2FOFCWT_fill,PH2FOFCWT_fill" "2FOFCWT,PH2FOFCWT"
+      checks {
+        all_data_are_valid_values = True
+        low_resolution_completeness = 4
+      }
+      scaling {
+        apply_b_factor_scaling = True
+      }
+    }
+    alignment {
+      method = global *local
+    }
+    filtering {
+      max_rmsd_to_reference = 1.5
+      max_rfree = 0.4
+      same_space_group_only = True
+      similar_models_only = False
+    }
+    excluding {
+      max_wilson_plot_z_score = 5
+    }
+    maps {
+      resolution_factor = 0.25
+      grid_spacing = 0.5
+      density_scaling = none *sigma volume
+    }
+    masks {
+      mask_pdb = None
+      mask_selection_string = None
+      align_mask_to_reference = False
+      outer_mask = 6
+      inner_mask = 1.8
+      inner_mask_symmetry = 3
+    }
+    statistical_maps {
+      min_build_datasets = 30
+      max_build_datasets = 60
+      average_map_type = *mean median
+      fit_mu = True
+      fit_sigma_adjusted = True
+      z_map_type = uncertainty *adjusted+uncertainty quantile
+    }
+    z_map_analysis {
+      clustering_method = *agglomerative_hierarchical
+      contour_level = 2.5
+      negative_values = False
+      min_blob_volume = 10
+      min_blob_z_peak = 3
+      masks {
+        selection_string = None
+        outer_mask = None
+        inner_mask = None
+      }
+      agglomerative_hierarchical {
+        clustering_cutoff = 2
+      }
+    }
+    background_correction {
+      min_bdc = 0
+      max_bdc = 1
+      increment = 0.01
+      output_multiplier = 1
+    }
+  }
+  results {
+    events {
+      order_by = z_peak z_mean *cluster_size
+    }
+    sites {
+      order_by = *num_events
+    }
+  }
+  exit_flags {
+    dry_run = False
+    setup_only = False
+    calculate_first_average_map_only = False
+  }
+  processing {
+    cpus = 1
+    backend = serial *parallel_joblib
+    pandda_backend = "*numpy"
+    process_shells = *serial
+    remote_nodes = None
+    cpus_per_remote_node = None
+    h_vmem = 100
+    m_mem_free = 5
+  }
+}
+settings {
+  verbose = False
+  plotting {
+    backend = "agg"
+  }
+}

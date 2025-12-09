@@ -1,0 +1,12 @@
+numpy
+matplotlib
+pandas
+jinja2
+markupsafe
+ascii_graph
+joblib
+pathlib
+configparser
+constants
+pytest
+pytest-dependency

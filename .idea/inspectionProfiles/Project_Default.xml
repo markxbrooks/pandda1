@@ -1,0 +1,97 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="CssUnknownProperty" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="myCustomPropertiesEnabled" value="true" />
+      <option name="myIgnoreVendorSpecificProperties" value="false" />
+      <option name="myCustomPropertiesList">
+        <value>
+          <list size="1">
+            <item index="0" class="java.lang.String" itemvalue="drop-shadow" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="DuplicatedCode" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <Languages>
+        <language minSize="55" name="Python" />
+      </Languages>
+    </inspection_tool>
+    <inspection_tool class="HtmlUnknownAttribute" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="myValues">
+        <value>
+          <list size="2">
+            <item index="0" class="java.lang.String" itemvalue="viewport" />
+            <item index="1" class="java.lang.String" itemvalue="icon" />
+          </list>
+        </value>
+      </option>
+      <option name="myCustomValuesEnabled" value="true" />
+    </inspection_tool>
+    <inspection_tool class="PyArgumentListInspection" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="PyCompatibilityInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ourVersions">
+        <value>
+          <list size="3">
+            <item index="0" class="java.lang.String" itemvalue="3.12" />
+            <item index="1" class="java.lang.String" itemvalue="3.11" />
+            <item index="2" class="java.lang.String" itemvalue="3.10" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="false" level="WARNING" enabled_by_default="false">
+      <option name="ignoredPackages">
+        <list>
+          <option value="alabaster" />
+          <option value="babel" />
+          <option value="cairocffi" />
+          <option value="CairoSVG" />
+          <option value="cffi" />
+          <option value="charset-normalizer" />
+          <option value="cssselect2" />
+          <option value="defusedxml" />
+          <option value="docutils" />
+          <option value="idna" />
+          <option value="imagesize" />
+          <option value="Jinja2" />
+          <option value="MarkupSafe" />
+          <option value="pycparser" />
+          <option value="Pygments" />
+          <option value="requests" />
+          <option value="snowballstemmer" />
+          <option value="Sphinx" />
+          <option value="sphinxcontrib-applehelp" />
+          <option value="sphinxcontrib-devhelp" />
+          <option value="sphinxcontrib-htmlhelp" />
+          <option value="sphinxcontrib-jsmath" />
+          <option value="sphinxcontrib-qthelp" />
+          <option value="sphinxcontrib-serializinghtml" />
+          <option value="sphinxcontrib-svg2pdfconverter" />
+          <option value="tinycss2" />
+          <option value="urllib3" />
+          <option value="webencodings" />
+          <option value="mido" />
+          <option value="python_rtmidi" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyPep8NamingInspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="ignoredErrors">
+        <list>
+          <option value="N802" />
+          <option value="N813" />
+          <option value="N811" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyStubPackagesAdvertiser" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <list>
+          <option value="scipy-stubs==1.16.1.1" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="INFORMATION" enabled_by_default="true" />
+  </profile>
+</component>

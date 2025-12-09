@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+INSPECT_BASE="pandda/inspect/__init__.py"
+
+SRC="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+if [[ -e "$SRC/../lib-python/$INSPECT_BASE" ]]; then
+	INSPECT_PATH="$SRC/../lib-python/$INSPECT_BASE"
+elif [[ -e "$SRC/../lib/python3.7/site-packages/$INSPECT_BASE" ]]; then
+	INSPECT_PATH="$SRC/../lib/python3.7/site-packages/$INSPECT_BASE"
+elif [[ -e "$SRC/../Frameworks/Python.framework/Versions/3.7/lib/python3.7/site-packages/panddas-1.0.0-py3.7.egg/$INSPECT_BASE" ]]; then
+	INSPECT_PATH="$SRC/../Frameworks/Python.framework/Versions/3.7/lib/python3.7/site-packages/panddas-1.0.0-py3.7.egg/$INSPECT_BASE"
+fi
+
+coot --no-guano --no-state-script --script $INSPECT_PATH "$@"

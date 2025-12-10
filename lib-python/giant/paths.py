@@ -1,4 +1,5 @@
 import os
+import platform
 import re
 import glob
 import shutil
@@ -52,6 +53,26 @@ def not_available(programs):
     return missing
 
 def rel_symlink(orig, link):
+    """Make a relative symlink from link to orig, or copy the file on Windows."""
+
+    orig = os.path.abspath(str(orig))
+    link = os.path.abspath(str(link))
+
+    if os.path.exists(link):
+        raise AssertionError(f"Link already exists: {link}")
+
+    # On Windows: fall back to file copy
+    if platform.system() == "Windows":
+        os.makedirs(os.path.dirname(link), exist_ok=True)
+        shutil.copy2(orig, link)
+        return link
+
+    # POSIX systems: real symlink
+    rel = os.path.relpath(orig, start=os.path.dirname(link))
+    os.symlink(rel, link)
+    return link
+
+def rel_symlink_old(orig, link):
     """Make a relative symlink from link to orig"""
     orig = str(orig)
     link = str(link)

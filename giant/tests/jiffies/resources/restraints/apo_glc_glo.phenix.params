@@ -1,0 +1,468 @@
+refinement.refine.occupancies {
+    constrained_group {
+        selection = (chain 'A' and resseq   23 and icode ' ' and resname 'ARG' and altid 'A')
+        selection = (chain 'A' and resseq   23 and icode ' ' and resname 'ARG' and altid 'B')
+        selection = (chain 'A' and resseq   23 and icode ' ' and resname 'ARG' and altid 'C')
+        selection = (chain 'A' and resseq   23 and icode ' ' and resname 'ARG' and altid 'D')
+        selection = (chain 'A' and resseq   23 and icode ' ' and resname 'ARG' and altid 'E')
+        selection = (chain 'A' and resseq   23 and icode ' ' and resname 'ARG' and altid 'F')
+        selection = (chain 'A' and resseq   23 and icode ' ' and resname 'ARG' and altid 'G')
+        selection = (chain 'A' and resseq   23 and icode ' ' and resname 'ARG' and altid 'H')
+        selection = (chain 'A' and resseq   23 and icode ' ' and resname 'ARG' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq   28 and icode ' ' and resname 'ASP' and altid 'A')
+        selection = (chain 'A' and resseq   28 and icode ' ' and resname 'ASP' and altid 'B')
+        selection = (chain 'A' and resseq   28 and icode ' ' and resname 'ASP' and altid 'C')
+        selection = (chain 'A' and resseq   28 and icode ' ' and resname 'ASP' and altid 'D')
+        selection = (chain 'A' and resseq   28 and icode ' ' and resname 'ASP' and altid 'E')
+        selection = (chain 'A' and resseq   28 and icode ' ' and resname 'ASP' and altid 'F')
+        selection = (chain 'A' and resseq   28 and icode ' ' and resname 'ASP' and altid 'G')
+        selection = (chain 'A' and resseq   28 and icode ' ' and resname 'ASP' and altid 'H')
+        selection = (chain 'A' and resseq   28 and icode ' ' and resname 'ASP' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq   38 and icode ' ' and resname 'GLU' and altid 'A')
+        selection = (chain 'A' and resseq   38 and icode ' ' and resname 'GLU' and altid 'B')
+        selection = (chain 'A' and resseq   38 and icode ' ' and resname 'GLU' and altid 'C')
+        selection = (chain 'A' and resseq   38 and icode ' ' and resname 'GLU' and altid 'D')
+        selection = (chain 'A' and resseq   38 and icode ' ' and resname 'GLU' and altid 'E')
+        selection = (chain 'A' and resseq   38 and icode ' ' and resname 'GLU' and altid 'F')
+        selection = (chain 'A' and resseq   38 and icode ' ' and resname 'GLU' and altid 'G')
+        selection = (chain 'A' and resseq   38 and icode ' ' and resname 'GLU' and altid 'H')
+        selection = (chain 'A' and resseq   38 and icode ' ' and resname 'GLU' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq   42 and icode ' ' and resname 'ARG' and altid 'A')
+        selection = (chain 'A' and resseq   42 and icode ' ' and resname 'ARG' and altid 'C')
+        selection = (chain 'A' and resseq   42 and icode ' ' and resname 'ARG' and altid 'B')
+        selection = (chain 'A' and resseq   42 and icode ' ' and resname 'ARG' and altid 'D')
+        selection = (chain 'A' and resseq   42 and icode ' ' and resname 'ARG' and altid 'F')
+        selection = (chain 'A' and resseq   42 and icode ' ' and resname 'ARG' and altid 'E')
+        selection = (chain 'A' and resseq   42 and icode ' ' and resname 'ARG' and altid 'G')
+        selection = (chain 'A' and resseq   42 and icode ' ' and resname 'ARG' and altid 'I')
+        selection = (chain 'A' and resseq   42 and icode ' ' and resname 'ARG' and altid 'H')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq   51 and icode ' ' and resname 'VAL' and altid 'A')
+        selection = (chain 'A' and resseq   51 and icode ' ' and resname 'VAL' and altid 'B')
+        selection = (chain 'A' and resseq   51 and icode ' ' and resname 'VAL' and altid 'C')
+        selection = (chain 'A' and resseq   51 and icode ' ' and resname 'VAL' and altid 'D')
+        selection = (chain 'A' and resseq   51 and icode ' ' and resname 'VAL' and altid 'E')
+        selection = (chain 'A' and resseq   51 and icode ' ' and resname 'VAL' and altid 'F')
+        selection = (chain 'A' and resseq   51 and icode ' ' and resname 'VAL' and altid 'G')
+        selection = (chain 'A' and resseq   51 and icode ' ' and resname 'VAL' and altid 'H')
+        selection = (chain 'A' and resseq   51 and icode ' ' and resname 'VAL' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq   66 and icode ' ' and resname 'SER' and altid 'A')
+        selection = (chain 'A' and resseq   66 and icode ' ' and resname 'SER' and altid 'B')
+        selection = (chain 'A' and resseq   66 and icode ' ' and resname 'SER' and altid 'C')
+        selection = (chain 'A' and resseq   66 and icode ' ' and resname 'SER' and altid 'D')
+        selection = (chain 'A' and resseq   66 and icode ' ' and resname 'SER' and altid 'E')
+        selection = (chain 'A' and resseq   66 and icode ' ' and resname 'SER' and altid 'F')
+        selection = (chain 'A' and resseq   66 and icode ' ' and resname 'SER' and altid 'G')
+        selection = (chain 'A' and resseq   66 and icode ' ' and resname 'SER' and altid 'H')
+        selection = (chain 'A' and resseq   66 and icode ' ' and resname 'SER' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq   70 and icode ' ' and resname 'GLU' and altid 'A')
+        selection = (chain 'A' and resseq   70 and icode ' ' and resname 'GLU' and altid 'B')
+        selection = (chain 'A' and resseq   70 and icode ' ' and resname 'GLU' and altid 'C')
+        selection = (chain 'A' and resseq   70 and icode ' ' and resname 'GLU' and altid 'D')
+        selection = (chain 'A' and resseq   70 and icode ' ' and resname 'GLU' and altid 'E')
+        selection = (chain 'A' and resseq   70 and icode ' ' and resname 'GLU' and altid 'F')
+        selection = (chain 'A' and resseq   70 and icode ' ' and resname 'GLU' and altid 'G')
+        selection = (chain 'A' and resseq   70 and icode ' ' and resname 'GLU' and altid 'H')
+        selection = (chain 'A' and resseq   70 and icode ' ' and resname 'GLU' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq   76 and icode ' ' and resname 'ARG' and altid 'A')
+        selection = (chain 'A' and resseq   76 and icode ' ' and resname 'ARG' and altid 'B')
+        selection = (chain 'A' and resseq   76 and icode ' ' and resname 'ARG' and altid 'C')
+        selection = (chain 'A' and resseq   76 and icode ' ' and resname 'ARG' and altid 'D')
+        selection = (chain 'A' and resseq   76 and icode ' ' and resname 'ARG' and altid 'E')
+        selection = (chain 'A' and resseq   76 and icode ' ' and resname 'ARG' and altid 'F')
+        selection = (chain 'A' and resseq   76 and icode ' ' and resname 'ARG' and altid 'G')
+        selection = (chain 'A' and resseq   76 and icode ' ' and resname 'ARG' and altid 'H')
+        selection = (chain 'A' and resseq   76 and icode ' ' and resname 'ARG' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq  121 and icode ' ' and resname 'ARG' and altid 'A')
+        selection = (chain 'A' and resseq  121 and icode ' ' and resname 'ARG' and altid 'B')
+        selection = (chain 'A' and resseq  121 and icode ' ' and resname 'ARG' and altid 'C')
+        selection = (chain 'A' and resseq  121 and icode ' ' and resname 'ARG' and altid 'D')
+        selection = (chain 'A' and resseq  121 and icode ' ' and resname 'ARG' and altid 'E')
+        selection = (chain 'A' and resseq  121 and icode ' ' and resname 'ARG' and altid 'F')
+        selection = (chain 'A' and resseq  121 and icode ' ' and resname 'ARG' and altid 'G')
+        selection = (chain 'A' and resseq  121 and icode ' ' and resname 'ARG' and altid 'H')
+        selection = (chain 'A' and resseq  121 and icode ' ' and resname 'ARG' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq  158 and icode ' ' and resname 'MET' and altid 'A')
+        selection = (chain 'A' and resseq  158 and icode ' ' and resname 'MET' and altid 'B')
+        selection = (chain 'A' and resseq  158 and icode ' ' and resname 'MET' and altid 'C')
+        selection = (chain 'A' and resseq  158 and icode ' ' and resname 'MET' and altid 'D')
+        selection = (chain 'A' and resseq  158 and icode ' ' and resname 'MET' and altid 'E')
+        selection = (chain 'A' and resseq  158 and icode ' ' and resname 'MET' and altid 'F')
+        selection = (chain 'A' and resseq  158 and icode ' ' and resname 'MET' and altid 'G')
+        selection = (chain 'A' and resseq  158 and icode ' ' and resname 'MET' and altid 'H')
+        selection = (chain 'A' and resseq  158 and icode ' ' and resname 'MET' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq  175 and icode ' ' and resname 'ASP' and altid 'A')
+        selection = (chain 'A' and resseq  175 and icode ' ' and resname 'ASP' and altid 'B')
+        selection = (chain 'A' and resseq  175 and icode ' ' and resname 'ASP' and altid 'C')
+        selection = (chain 'A' and resseq  175 and icode ' ' and resname 'ASP' and altid 'D')
+        selection = (chain 'A' and resseq  175 and icode ' ' and resname 'ASP' and altid 'E')
+        selection = (chain 'A' and resseq  175 and icode ' ' and resname 'ASP' and altid 'F')
+        selection = (chain 'A' and resseq  175 and icode ' ' and resname 'ASP' and altid 'G')
+        selection = (chain 'A' and resseq  175 and icode ' ' and resname 'ASP' and altid 'H')
+        selection = (chain 'A' and resseq  175 and icode ' ' and resname 'ASP' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq  186 and icode ' ' and resname 'GLU' and altid 'A')
+        selection = (chain 'A' and resseq  186 and icode ' ' and resname 'GLU' and altid 'B')
+        selection = (chain 'A' and resseq  186 and icode ' ' and resname 'GLU' and altid 'C')
+        selection = (chain 'A' and resseq  186 and icode ' ' and resname 'GLU' and altid 'D')
+        selection = (chain 'A' and resseq  186 and icode ' ' and resname 'GLU' and altid 'E')
+        selection = (chain 'A' and resseq  186 and icode ' ' and resname 'GLU' and altid 'F')
+        selection = (chain 'A' and resseq  186 and icode ' ' and resname 'GLU' and altid 'G')
+        selection = (chain 'A' and resseq  186 and icode ' ' and resname 'GLU' and altid 'H')
+        selection = (chain 'A' and resseq  186 and icode ' ' and resname 'GLU' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq  196 and icode ' ' and resname 'VAL' and altid 'A')
+        selection = (chain 'A' and resseq  196 and icode ' ' and resname 'VAL' and altid 'B')
+        selection = (chain 'A' and resseq  196 and icode ' ' and resname 'VAL' and altid 'C')
+        selection = (chain 'A' and resseq  196 and icode ' ' and resname 'VAL' and altid 'D')
+        selection = (chain 'A' and resseq  196 and icode ' ' and resname 'VAL' and altid 'E')
+        selection = (chain 'A' and resseq  196 and icode ' ' and resname 'VAL' and altid 'F')
+        selection = (chain 'A' and resseq  196 and icode ' ' and resname 'VAL' and altid 'G')
+        selection = (chain 'A' and resseq  196 and icode ' ' and resname 'VAL' and altid 'H')
+        selection = (chain 'A' and resseq  196 and icode ' ' and resname 'VAL' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq  205 and icode ' ' and resname 'ARG' and altid 'A')
+        selection = (chain 'A' and resseq  205 and icode ' ' and resname 'ARG' and altid 'B')
+        selection = (chain 'A' and resseq  205 and icode ' ' and resname 'ARG' and altid 'C')
+        selection = (chain 'A' and resseq  205 and icode ' ' and resname 'ARG' and altid 'D')
+        selection = (chain 'A' and resseq  205 and icode ' ' and resname 'ARG' and altid 'E')
+        selection = (chain 'A' and resseq  205 and icode ' ' and resname 'ARG' and altid 'F')
+        selection = (chain 'A' and resseq  205 and icode ' ' and resname 'ARG' and altid 'G')
+        selection = (chain 'A' and resseq  205 and icode ' ' and resname 'ARG' and altid 'H')
+        selection = (chain 'A' and resseq  205 and icode ' ' and resname 'ARG' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq  220 and icode ' ' and resname 'HIS' and altid 'A')
+        selection = (chain 'A' and resseq  220 and icode ' ' and resname 'HIS' and altid 'B')
+        selection = (chain 'A' and resseq  220 and icode ' ' and resname 'HIS' and altid 'C')
+        selection = (chain 'A' and resseq  220 and icode ' ' and resname 'HIS' and altid 'D')
+        selection = (chain 'A' and resseq  220 and icode ' ' and resname 'HIS' and altid 'E')
+        selection = (chain 'A' and resseq  220 and icode ' ' and resname 'HIS' and altid 'F')
+        selection = (chain 'A' and resseq  220 and icode ' ' and resname 'HIS' and altid 'G')
+        selection = (chain 'A' and resseq  220 and icode ' ' and resname 'HIS' and altid 'H')
+        selection = (chain 'A' and resseq  220 and icode ' ' and resname 'HIS' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq  253 and icode ' ' and resname 'LYS' and altid 'A')
+        selection = (chain 'A' and resseq  253 and icode ' ' and resname 'LYS' and altid 'B')
+        selection = (chain 'A' and resseq  253 and icode ' ' and resname 'LYS' and altid 'C')
+        selection = (chain 'A' and resseq  253 and icode ' ' and resname 'LYS' and altid 'D')
+        selection = (chain 'A' and resseq  253 and icode ' ' and resname 'LYS' and altid 'E')
+        selection = (chain 'A' and resseq  253 and icode ' ' and resname 'LYS' and altid 'F')
+        selection = (chain 'A' and resseq  253 and icode ' ' and resname 'LYS' and altid 'G')
+        selection = (chain 'A' and resseq  253 and icode ' ' and resname 'LYS' and altid 'H')
+        selection = (chain 'A' and resseq  253 and icode ' ' and resname 'LYS' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq  255 and icode ' ' and resname 'ASP' and altid 'A')
+        selection = (chain 'A' and resseq  255 and icode ' ' and resname 'ASP' and altid 'B')
+        selection = (chain 'A' and resseq  255 and icode ' ' and resname 'ASP' and altid 'C')
+        selection = (chain 'A' and resseq  255 and icode ' ' and resname 'ASP' and altid 'D')
+        selection = (chain 'A' and resseq  255 and icode ' ' and resname 'ASP' and altid 'E')
+        selection = (chain 'A' and resseq  255 and icode ' ' and resname 'ASP' and altid 'F')
+        selection = (chain 'A' and resseq  255 and icode ' ' and resname 'ASP' and altid 'G')
+        selection = (chain 'A' and resseq  255 and icode ' ' and resname 'ASP' and altid 'H')
+        selection = (chain 'A' and resseq  255 and icode ' ' and resname 'ASP' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq  266 and icode ' ' and resname 'ARG' and altid 'A')
+        selection = (chain 'A' and resseq  266 and icode ' ' and resname 'ARG' and altid 'B')
+        selection = (chain 'A' and resseq  266 and icode ' ' and resname 'ARG' and altid 'C')
+        selection = (chain 'A' and resseq  266 and icode ' ' and resname 'ARG' and altid 'D')
+        selection = (chain 'A' and resseq  266 and icode ' ' and resname 'ARG' and altid 'E')
+        selection = (chain 'A' and resseq  266 and icode ' ' and resname 'ARG' and altid 'F')
+        selection = (chain 'A' and resseq  266 and icode ' ' and resname 'ARG' and altid 'G')
+        selection = (chain 'A' and resseq  266 and icode ' ' and resname 'ARG' and altid 'H')
+        selection = (chain 'A' and resseq  266 and icode ' ' and resname 'ARG' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq  277 and icode ' ' and resname 'SER' and altid 'A')
+        selection = (chain 'A' and resseq  277 and icode ' ' and resname 'SER' and altid 'B')
+        selection = (chain 'A' and resseq  277 and icode ' ' and resname 'SER' and altid 'C')
+        selection = (chain 'A' and resseq  277 and icode ' ' and resname 'SER' and altid 'D')
+        selection = (chain 'A' and resseq  277 and icode ' ' and resname 'SER' and altid 'E')
+        selection = (chain 'A' and resseq  277 and icode ' ' and resname 'SER' and altid 'F')
+        selection = (chain 'A' and resseq  277 and icode ' ' and resname 'SER' and altid 'G')
+        selection = (chain 'A' and resseq  277 and icode ' ' and resname 'SER' and altid 'H')
+        selection = (chain 'A' and resseq  277 and icode ' ' and resname 'SER' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq  284 and icode ' ' and resname 'ARG' and altid 'A')
+        selection = (chain 'A' and resseq  284 and icode ' ' and resname 'ARG' and altid 'B')
+        selection = (chain 'A' and resseq  284 and icode ' ' and resname 'ARG' and altid 'C')
+        selection = (chain 'A' and resseq  284 and icode ' ' and resname 'ARG' and altid 'D')
+        selection = (chain 'A' and resseq  284 and icode ' ' and resname 'ARG' and altid 'E')
+        selection = (chain 'A' and resseq  284 and icode ' ' and resname 'ARG' and altid 'F')
+        selection = (chain 'A' and resseq  284 and icode ' ' and resname 'ARG' and altid 'G')
+        selection = (chain 'A' and resseq  284 and icode ' ' and resname 'ARG' and altid 'H')
+        selection = (chain 'A' and resseq  284 and icode ' ' and resname 'ARG' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq  289 and icode ' ' and resname 'LYS' and altid 'A')
+        selection = (chain 'A' and resseq  289 and icode ' ' and resname 'LYS' and altid 'B')
+        selection = (chain 'A' and resseq  289 and icode ' ' and resname 'LYS' and altid 'C')
+        selection = (chain 'A' and resseq  289 and icode ' ' and resname 'LYS' and altid 'D')
+        selection = (chain 'A' and resseq  289 and icode ' ' and resname 'LYS' and altid 'E')
+        selection = (chain 'A' and resseq  289 and icode ' ' and resname 'LYS' and altid 'F')
+        selection = (chain 'A' and resseq  289 and icode ' ' and resname 'LYS' and altid 'G')
+        selection = (chain 'A' and resseq  289 and icode ' ' and resname 'LYS' and altid 'H')
+        selection = (chain 'A' and resseq  289 and icode ' ' and resname 'LYS' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq  327 and icode ' ' and resname 'GLN' and altid 'A') or \
+            (chain 'A' and resseq  328 and icode ' ' and resname 'GLU' and altid 'A')
+        selection = (chain 'A' and resseq  327 and icode ' ' and resname 'GLN' and altid 'B') or \
+            (chain 'A' and resseq  328 and icode ' ' and resname 'GLU' and altid 'B')
+        selection = (chain 'A' and resseq  327 and icode ' ' and resname 'GLN' and altid 'C') or \
+            (chain 'A' and resseq  328 and icode ' ' and resname 'GLU' and altid 'C')
+        selection = (chain 'A' and resseq  327 and icode ' ' and resname 'GLN' and altid 'D') or \
+            (chain 'A' and resseq  328 and icode ' ' and resname 'GLU' and altid 'D')
+        selection = (chain 'A' and resseq  327 and icode ' ' and resname 'GLN' and altid 'E') or \
+            (chain 'A' and resseq  328 and icode ' ' and resname 'GLU' and altid 'E')
+        selection = (chain 'A' and resseq  327 and icode ' ' and resname 'GLN' and altid 'F') or \
+            (chain 'A' and resseq  328 and icode ' ' and resname 'GLU' and altid 'F')
+        selection = (chain 'A' and resseq  327 and icode ' ' and resname 'GLN' and altid 'G') or \
+            (chain 'A' and resseq  328 and icode ' ' and resname 'GLU' and altid 'G')
+        selection = (chain 'A' and resseq  327 and icode ' ' and resname 'GLN' and altid 'H') or \
+            (chain 'A' and resseq  328 and icode ' ' and resname 'GLU' and altid 'H')
+        selection = (chain 'A' and resseq  327 and icode ' ' and resname 'GLN' and altid 'I') or \
+            (chain 'A' and resseq  328 and icode ' ' and resname 'GLU' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq  331 and icode ' ' and resname 'ARG' and altid 'A')
+        selection = (chain 'A' and resseq  331 and icode ' ' and resname 'ARG' and altid 'B')
+        selection = (chain 'A' and resseq  331 and icode ' ' and resname 'ARG' and altid 'C')
+        selection = (chain 'A' and resseq  331 and icode ' ' and resname 'ARG' and altid 'D')
+        selection = (chain 'A' and resseq  331 and icode ' ' and resname 'ARG' and altid 'E')
+        selection = (chain 'A' and resseq  331 and icode ' ' and resname 'ARG' and altid 'F')
+        selection = (chain 'A' and resseq  331 and icode ' ' and resname 'ARG' and altid 'G')
+        selection = (chain 'A' and resseq  331 and icode ' ' and resname 'ARG' and altid 'H')
+        selection = (chain 'A' and resseq  331 and icode ' ' and resname 'ARG' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq  340 and icode ' ' and resname 'ARG' and altid 'A')
+        selection = (chain 'A' and resseq  340 and icode ' ' and resname 'ARG' and altid 'B')
+        selection = (chain 'A' and resseq  340 and icode ' ' and resname 'ARG' and altid 'C')
+        selection = (chain 'A' and resseq  340 and icode ' ' and resname 'ARG' and altid 'D')
+        selection = (chain 'A' and resseq  340 and icode ' ' and resname 'ARG' and altid 'E')
+        selection = (chain 'A' and resseq  340 and icode ' ' and resname 'ARG' and altid 'F')
+        selection = (chain 'A' and resseq  340 and icode ' ' and resname 'ARG' and altid 'G')
+        selection = (chain 'A' and resseq  340 and icode ' ' and resname 'ARG' and altid 'H')
+        selection = (chain 'A' and resseq  340 and icode ' ' and resname 'ARG' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq  362 and icode ' ' and resname 'VAL' and altid 'A')
+        selection = (chain 'A' and resseq  362 and icode ' ' and resname 'VAL' and altid 'B')
+        selection = (chain 'A' and resseq  362 and icode ' ' and resname 'VAL' and altid 'C')
+        selection = (chain 'A' and resseq  362 and icode ' ' and resname 'VAL' and altid 'D')
+        selection = (chain 'A' and resseq  362 and icode ' ' and resname 'VAL' and altid 'E')
+        selection = (chain 'A' and resseq  362 and icode ' ' and resname 'VAL' and altid 'F')
+        selection = (chain 'A' and resseq  362 and icode ' ' and resname 'VAL' and altid 'G')
+        selection = (chain 'A' and resseq  362 and icode ' ' and resname 'VAL' and altid 'H')
+        selection = (chain 'A' and resseq  362 and icode ' ' and resname 'VAL' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq  401 and icode ' ' and resname 'GLC' and altid 'D')
+        selection = (chain 'A' and resseq  401 and icode ' ' and resname 'GLC' and altid 'E')
+        selection = (chain 'A' and resseq  401 and icode ' ' and resname 'GLC' and altid 'F')
+    }
+    constrained_group {
+        selection = (chain 'A' and resseq  402 and icode ' ' and resname 'GLO' and altid 'G')
+        selection = (chain 'A' and resseq  402 and icode ' ' and resname 'GLO' and altid 'H')
+        selection = (chain 'A' and resseq  402 and icode ' ' and resname 'GLO' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'C' and resseq    1 and icode ' ' and resname ' MN' and altid 'A')
+        selection = (chain 'C' and resseq    1 and icode ' ' and resname ' MN' and altid 'B')
+        selection = (chain 'C' and resseq    1 and icode ' ' and resname ' MN' and altid 'C')
+        selection = (chain 'C' and resseq    1 and icode ' ' and resname ' MN' and altid 'D')
+        selection = (chain 'C' and resseq    1 and icode ' ' and resname ' MN' and altid 'E')
+        selection = (chain 'C' and resseq    1 and icode ' ' and resname ' MN' and altid 'F')
+        selection = (chain 'C' and resseq    1 and icode ' ' and resname ' MN' and altid 'G')
+        selection = (chain 'C' and resseq    1 and icode ' ' and resname ' MN' and altid 'H')
+        selection = (chain 'C' and resseq    1 and icode ' ' and resname ' MN' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'S' and resseq   60 and icode ' ' and resname 'HOH' and altid 'A')
+        selection = (chain 'S' and resseq   60 and icode ' ' and resname 'HOH' and altid 'B')
+        selection = (chain 'S' and resseq   60 and icode ' ' and resname 'HOH' and altid 'C')
+        selection = (chain 'S' and resseq   60 and icode ' ' and resname 'HOH' and altid 'D')
+        selection = (chain 'S' and resseq   60 and icode ' ' and resname 'HOH' and altid 'E')
+        selection = (chain 'S' and resseq   60 and icode ' ' and resname 'HOH' and altid 'F')
+        selection = (chain 'S' and resseq   60 and icode ' ' and resname 'HOH' and altid 'G')
+        selection = (chain 'S' and resseq   60 and icode ' ' and resname 'HOH' and altid 'H')
+        selection = (chain 'S' and resseq   60 and icode ' ' and resname 'HOH' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'S' and resseq   78 and icode ' ' and resname 'HOH' and altid 'A')
+        selection = (chain 'S' and resseq   78 and icode ' ' and resname 'HOH' and altid 'B')
+        selection = (chain 'S' and resseq   78 and icode ' ' and resname 'HOH' and altid 'C')
+        selection = (chain 'S' and resseq   78 and icode ' ' and resname 'HOH' and altid 'D')
+        selection = (chain 'S' and resseq   78 and icode ' ' and resname 'HOH' and altid 'E')
+        selection = (chain 'S' and resseq   78 and icode ' ' and resname 'HOH' and altid 'F')
+        selection = (chain 'S' and resseq   78 and icode ' ' and resname 'HOH' and altid 'G')
+        selection = (chain 'S' and resseq   78 and icode ' ' and resname 'HOH' and altid 'H')
+        selection = (chain 'S' and resseq   78 and icode ' ' and resname 'HOH' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'S' and resseq  123 and icode ' ' and resname 'HOH' and altid 'A')
+        selection = (chain 'S' and resseq  123 and icode ' ' and resname 'HOH' and altid 'B')
+        selection = (chain 'S' and resseq  123 and icode ' ' and resname 'HOH' and altid 'C')
+        selection = (chain 'S' and resseq  123 and icode ' ' and resname 'HOH' and altid 'D')
+        selection = (chain 'S' and resseq  123 and icode ' ' and resname 'HOH' and altid 'E')
+        selection = (chain 'S' and resseq  123 and icode ' ' and resname 'HOH' and altid 'F')
+        selection = (chain 'S' and resseq  123 and icode ' ' and resname 'HOH' and altid 'G')
+        selection = (chain 'S' and resseq  123 and icode ' ' and resname 'HOH' and altid 'H')
+        selection = (chain 'S' and resseq  123 and icode ' ' and resname 'HOH' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'S' and resseq  142 and icode ' ' and resname 'HOH' and altid 'A')
+        selection = (chain 'S' and resseq  142 and icode ' ' and resname 'HOH' and altid 'B')
+        selection = (chain 'S' and resseq  142 and icode ' ' and resname 'HOH' and altid 'C')
+        selection = (chain 'S' and resseq  142 and icode ' ' and resname 'HOH' and altid 'D')
+        selection = (chain 'S' and resseq  142 and icode ' ' and resname 'HOH' and altid 'E')
+        selection = (chain 'S' and resseq  142 and icode ' ' and resname 'HOH' and altid 'F')
+        selection = (chain 'S' and resseq  142 and icode ' ' and resname 'HOH' and altid 'G')
+        selection = (chain 'S' and resseq  142 and icode ' ' and resname 'HOH' and altid 'H')
+        selection = (chain 'S' and resseq  142 and icode ' ' and resname 'HOH' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'S' and resseq  147 and icode ' ' and resname 'HOH' and altid 'A')
+        selection = (chain 'S' and resseq  147 and icode ' ' and resname 'HOH' and altid 'B')
+        selection = (chain 'S' and resseq  147 and icode ' ' and resname 'HOH' and altid 'C')
+    }
+    constrained_group {
+        selection = (chain 'S' and resseq  152 and icode ' ' and resname 'HOH' and altid 'A')
+        selection = (chain 'S' and resseq  152 and icode ' ' and resname 'HOH' and altid 'B')
+        selection = (chain 'S' and resseq  152 and icode ' ' and resname 'HOH' and altid 'C')
+        selection = (chain 'S' and resseq  152 and icode ' ' and resname 'HOH' and altid 'D')
+        selection = (chain 'S' and resseq  152 and icode ' ' and resname 'HOH' and altid 'E')
+        selection = (chain 'S' and resseq  152 and icode ' ' and resname 'HOH' and altid 'F')
+        selection = (chain 'S' and resseq  152 and icode ' ' and resname 'HOH' and altid 'G')
+        selection = (chain 'S' and resseq  152 and icode ' ' and resname 'HOH' and altid 'H')
+        selection = (chain 'S' and resseq  152 and icode ' ' and resname 'HOH' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'S' and resseq  173 and icode ' ' and resname 'HOH' and altid 'A')
+        selection = (chain 'S' and resseq  173 and icode ' ' and resname 'HOH' and altid 'B')
+        selection = (chain 'S' and resseq  173 and icode ' ' and resname 'HOH' and altid 'C')
+    }
+    constrained_group {
+        selection = (chain 'S' and resseq  181 and icode ' ' and resname 'HOH' and altid 'A')
+        selection = (chain 'S' and resseq  181 and icode ' ' and resname 'HOH' and altid 'B')
+        selection = (chain 'S' and resseq  181 and icode ' ' and resname 'HOH' and altid 'C')
+        selection = (chain 'S' and resseq  181 and icode ' ' and resname 'HOH' and altid 'G')
+        selection = (chain 'S' and resseq  181 and icode ' ' and resname 'HOH' and altid 'H')
+        selection = (chain 'S' and resseq  181 and icode ' ' and resname 'HOH' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'S' and resseq  187 and icode ' ' and resname 'HOH' and altid 'A')
+        selection = (chain 'S' and resseq  187 and icode ' ' and resname 'HOH' and altid 'B')
+        selection = (chain 'S' and resseq  187 and icode ' ' and resname 'HOH' and altid 'C')
+    }
+    constrained_group {
+        selection = (chain 'S' and resseq  188 and icode ' ' and resname 'HOH' and altid 'A')
+        selection = (chain 'S' and resseq  188 and icode ' ' and resname 'HOH' and altid 'B')
+        selection = (chain 'S' and resseq  188 and icode ' ' and resname 'HOH' and altid 'C')
+        selection = (chain 'S' and resseq  188 and icode ' ' and resname 'HOH' and altid 'D')
+        selection = (chain 'S' and resseq  188 and icode ' ' and resname 'HOH' and altid 'E')
+        selection = (chain 'S' and resseq  188 and icode ' ' and resname 'HOH' and altid 'F')
+        selection = (chain 'S' and resseq  188 and icode ' ' and resname 'HOH' and altid 'G')
+        selection = (chain 'S' and resseq  188 and icode ' ' and resname 'HOH' and altid 'H')
+        selection = (chain 'S' and resseq  188 and icode ' ' and resname 'HOH' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'S' and resseq  194 and icode ' ' and resname 'HOH' and altid 'A')
+        selection = (chain 'S' and resseq  194 and icode ' ' and resname 'HOH' and altid 'B')
+        selection = (chain 'S' and resseq  194 and icode ' ' and resname 'HOH' and altid 'C')
+        selection = (chain 'S' and resseq  194 and icode ' ' and resname 'HOH' and altid 'D')
+        selection = (chain 'S' and resseq  194 and icode ' ' and resname 'HOH' and altid 'E')
+        selection = (chain 'S' and resseq  194 and icode ' ' and resname 'HOH' and altid 'F')
+        selection = (chain 'S' and resseq  194 and icode ' ' and resname 'HOH' and altid 'G')
+        selection = (chain 'S' and resseq  194 and icode ' ' and resname 'HOH' and altid 'H')
+        selection = (chain 'S' and resseq  194 and icode ' ' and resname 'HOH' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'S' and resseq  205 and icode ' ' and resname 'HOH' and altid 'A')
+        selection = (chain 'S' and resseq  205 and icode ' ' and resname 'HOH' and altid 'B')
+        selection = (chain 'S' and resseq  205 and icode ' ' and resname 'HOH' and altid 'C')
+        selection = (chain 'S' and resseq  205 and icode ' ' and resname 'HOH' and altid 'D')
+        selection = (chain 'S' and resseq  205 and icode ' ' and resname 'HOH' and altid 'E')
+        selection = (chain 'S' and resseq  205 and icode ' ' and resname 'HOH' and altid 'F')
+    }
+    constrained_group {
+        selection = (chain 'S' and resseq  231 and icode ' ' and resname 'HOH' and altid 'A')
+        selection = (chain 'S' and resseq  231 and icode ' ' and resname 'HOH' and altid 'B')
+        selection = (chain 'S' and resseq  231 and icode ' ' and resname 'HOH' and altid 'C')
+    }
+    constrained_group {
+        selection = (chain 'S' and resseq  283 and icode ' ' and resname 'HOH' and altid 'A')
+        selection = (chain 'S' and resseq  283 and icode ' ' and resname 'HOH' and altid 'B')
+        selection = (chain 'S' and resseq  283 and icode ' ' and resname 'HOH' and altid 'C')
+        selection = (chain 'S' and resseq  283 and icode ' ' and resname 'HOH' and altid 'D')
+        selection = (chain 'S' and resseq  283 and icode ' ' and resname 'HOH' and altid 'E')
+        selection = (chain 'S' and resseq  283 and icode ' ' and resname 'HOH' and altid 'F')
+        selection = (chain 'S' and resseq  283 and icode ' ' and resname 'HOH' and altid 'G')
+        selection = (chain 'S' and resseq  283 and icode ' ' and resname 'HOH' and altid 'H')
+        selection = (chain 'S' and resseq  283 and icode ' ' and resname 'HOH' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'S' and resseq  284 and icode ' ' and resname 'HOH' and altid 'A')
+        selection = (chain 'S' and resseq  284 and icode ' ' and resname 'HOH' and altid 'B')
+        selection = (chain 'S' and resseq  284 and icode ' ' and resname 'HOH' and altid 'C')
+        selection = (chain 'S' and resseq  284 and icode ' ' and resname 'HOH' and altid 'D')
+        selection = (chain 'S' and resseq  284 and icode ' ' and resname 'HOH' and altid 'E')
+        selection = (chain 'S' and resseq  284 and icode ' ' and resname 'HOH' and altid 'F')
+        selection = (chain 'S' and resseq  284 and icode ' ' and resname 'HOH' and altid 'G')
+        selection = (chain 'S' and resseq  284 and icode ' ' and resname 'HOH' and altid 'H')
+        selection = (chain 'S' and resseq  284 and icode ' ' and resname 'HOH' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'S' and resseq  285 and icode ' ' and resname 'HOH' and altid 'A')
+        selection = (chain 'S' and resseq  285 and icode ' ' and resname 'HOH' and altid 'B')
+        selection = (chain 'S' and resseq  285 and icode ' ' and resname 'HOH' and altid 'C')
+    }
+    constrained_group {
+        selection = (chain 'S' and resseq  287 and icode ' ' and resname 'HOH' and altid 'D')
+        selection = (chain 'S' and resseq  287 and icode ' ' and resname 'HOH' and altid 'E')
+        selection = (chain 'S' and resseq  287 and icode ' ' and resname 'HOH' and altid 'F')
+        selection = (chain 'S' and resseq  287 and icode ' ' and resname 'HOH' and altid 'G')
+        selection = (chain 'S' and resseq  287 and icode ' ' and resname 'HOH' and altid 'H')
+        selection = (chain 'S' and resseq  287 and icode ' ' and resname 'HOH' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'S' and resseq  288 and icode ' ' and resname 'HOH' and altid 'D')
+        selection = (chain 'S' and resseq  288 and icode ' ' and resname 'HOH' and altid 'E')
+        selection = (chain 'S' and resseq  288 and icode ' ' and resname 'HOH' and altid 'F')
+        selection = (chain 'S' and resseq  288 and icode ' ' and resname 'HOH' and altid 'G')
+        selection = (chain 'S' and resseq  288 and icode ' ' and resname 'HOH' and altid 'H')
+        selection = (chain 'S' and resseq  288 and icode ' ' and resname 'HOH' and altid 'I')
+    }
+    constrained_group {
+        selection = (chain 'S' and resseq  289 and icode ' ' and resname 'HOH' and altid 'D')
+        selection = (chain 'S' and resseq  289 and icode ' ' and resname 'HOH' and altid 'E')
+        selection = (chain 'S' and resseq  289 and icode ' ' and resname 'HOH' and altid 'F')
+    }
+}

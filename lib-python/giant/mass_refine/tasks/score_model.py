@@ -1,3 +1,2 @@
 
-class ScoreModel(object):
-    pass
+class

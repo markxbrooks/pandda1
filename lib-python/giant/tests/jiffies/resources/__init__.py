@@ -1,5 +1,5 @@
-import shutil
 import pathlib as pl
+import shutil
 
 
 class MultiStateResources(object):
@@ -10,9 +10,7 @@ class MultiStateResources(object):
 
     def get(self, rel_filepath, out_path=None):
 
-        in_path = (
-            self.dir_path / rel_filepath
-            )
+        in_path = self.dir_path / rel_filepath
 
         assert in_path.exists()
 
@@ -20,7 +18,7 @@ class MultiStateResources(object):
             shutil.copy(
                 str(in_path),
                 str(out_path),
-                )
+            )
 
             return out_path
 
@@ -28,19 +26,33 @@ class MultiStateResources(object):
 
     def read(self, path):
 
-        with open(str(path), 'r') as fh: 
+        with open(str(path), "r") as fh:
             s = fh.read()
 
         return s.strip()
 
-    def assert_same(self, path1, path2):
+    def assert_same(self, path1, path2, save_new=True):
 
         string1 = self.read(path1)
         string2 = self.read(path2)
 
+        if string1 != string2:
+            # Save the actual output to a .new file for review before failing
+            if save_new:
+                import shutil
+                new_path = pl.Path(str(path1).replace(".params", ".new.params").replace(".pdb", ".new.pdb"))
+                new_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(path2, new_path)
+                # Print to stderr so it shows up even with -q flag
+                import sys
+                print(f"\nActual output saved to: {new_path}", file=sys.stderr)
+                print(f"Reference file: {path1}", file=sys.stderr)
+                print(f"To update: cp {new_path} {path1}\n", file=sys.stderr)
+        
         assert string1 == string2, "{} != {}".format(
-            str(path1), str(path2),
-            )
+            str(path1),
+            str(path2),
+        )
 
     ###
 
@@ -127,10 +139,14 @@ class MultiStateResources(object):
         return self.get("split/apo_glc_no_prune-split-bound-state-DEF.pdb", out_path)
 
     def split_apo_glc_to_apo_no_reset_altlocs(self, out_path=None):
-        return self.get("split/apo_glc_no_reset_altlocs-split-ground-state-ABC.pdb", out_path)
+        return self.get(
+            "split/apo_glc_no_reset_altlocs-split-ground-state-ABC.pdb", out_path
+        )
 
     def split_apo_glc_to_glc_no_reset_altlocs(self, out_path=None):
-        return self.get("split/apo_glc_no_reset_altlocs-split-bound-state-DEF.pdb", out_path)
+        return self.get(
+            "split/apo_glc_no_reset_altlocs-split-bound-state-DEF.pdb", out_path
+        )
 
     #
 
@@ -148,5 +164,3 @@ class MultiStateResources(object):
 
     def split_apo_glc_glo_to_glc_glo(self, out_path=None):
         return self.get("split/apo_glc_glo-split-DEFGHI.pdb", out_path)
-
-

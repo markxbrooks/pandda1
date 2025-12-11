@@ -1,11 +1,11 @@
 class Div(object):
 
     __slots__ = (
-        'id',
-        'contents',
+        "id",
+        "contents",
     )
 
-    type = 'div'
+    type = "div"
 
     def __init__(self, **kw_args):
 
@@ -27,7 +27,7 @@ class Div(object):
             setattr(self, k, v)
 
     def get(self, key):
-        assert key != 'contents'
+        assert key != "contents"
         return getattr(self, key)
 
     def __getitem__(self, attr):
@@ -43,76 +43,69 @@ class Div(object):
 class Block(Div):
 
     __slots__ = (
-        'title',
-        'text',
-        'html',
-        'image',
-        'table',
-        'footnote',
-        'width',
-        'colour',
-        'classes',
-        'styles',
-        'max_width',
-        'fancy_title',
-        'title_size',
+        "title",
+        "text",
+        "html",
+        "image",
+        "table",
+        "footnote",
+        "width",
+        "colour",
+        "classes",
+        "styles",
+        "max_width",
+        "fancy_title",
+        "title_size",
     )
 
-    type = 'block'
+    type = "block"
 
-    def __init__(
-        self,
-        width = 12,
-        fancy_title = False,
-        **kw_args
-        ):
+    def __init__(self, width=12, fancy_title=False, **kw_args):
 
         # MUST BE FIRST
         super(Block, self).__init__(**kw_args)
 
         # Not captured by kw_args
         self.set(
-            width = width,
-            fancy_title = fancy_title,
+            width=width,
+            fancy_title=fancy_title,
         )
-        
+
 
 class Alert(Block):
 
-    type = 'alert'
+    type = "alert"
 
 
 class ScrollX(Block):
 
-    type = 'scroll'
+    type = "scroll"
 
 
 class Panel(Block):
 
-    __slots__ = Block.__slots__ + (
-        'show',
-    )
+    __slots__ = Block.__slots__ + ("show",)
 
-    type = 'panel'
+    type = "panel"
 
 
 class TabSet(Div):
 
     __slots__ = Div.__slots__ + (
-        'title',
-        'width',
-        'title_size',
-        'classes',
-        'colour',
+        "title",
+        "width",
+        "title_size",
+        "classes",
+        "colour",
     )
 
-    type = 'tabs'
+    type = "tabs"
 
     def set_active(
         self,
-        tab = None,
-        i_tab = 0,
-        ):
+        tab=None,
+        i_tab=0,
+    ):
 
         if not self.contents:
             return
@@ -128,26 +121,20 @@ class TabSet(Div):
 class Tab(Block):
 
     __slots__ = Block.__slots__ + (
-        'alt_title',
-        'active',
+        "alt_title",
+        "active",
     )
 
-    type = 'tab'
+    type = "tab"
 
-    def __init__(
-        self,
-        alt_title = None,
-        fancy_title = True,
-        **kw_args
-        ):
+    def __init__(self, alt_title=None, fancy_title=True, **kw_args):
 
         super(Tab, self).__init__(**kw_args)
 
         if alt_title is None:
-            alt_title = kw_args['title']
+            alt_title = kw_args["title"]
 
         self.set(
-            alt_title = alt_title,
-            fancy_title = fancy_title,
+            alt_title=alt_title,
+            fancy_title=fancy_title,
         )
-

@@ -1,4 +1,5 @@
 import giant.logs as lg
+
 logger = lg.getLogger(__name__)
 
 
@@ -19,18 +20,16 @@ class DatasetFilter(object):
 
             valid, reason = self.is_valid(dataset, **kw_args)
 
-            if (valid is False):
+            if valid is False:
                 self.rejections[dtag] = reason
                 remove_datasets.append(dtag)
 
         # Create a new dataset
         new_datasets = {
-            dtag: d
-            for dtag, d in mcd.datasets.items()
-            if (dtag not in remove_datasets)
+            dtag: d for dtag, d in mcd.datasets.items() if (dtag not in remove_datasets)
         }
         new_dataset = mcd.new_from_datasets(
-            datasets = new_datasets,
+            datasets=new_datasets,
         )
 
         return new_dataset
@@ -38,42 +37,44 @@ class DatasetFilter(object):
     def __str__(self):
 
         parameters = self.parameters()
-        rejections = self.rejections 
+        rejections = self.rejections
 
         parameter_strings = [
-            '{k}: {v}'.format(
-                k=k, 
-                v=str(v).strip().replace('\n','\n\t'),
-                )
-            for k,v in parameters.items()
-            ]
+            "{k}: {v}".format(
+                k=k,
+                v=str(v).strip().replace("\n", "\n\t"),
+            )
+            for k, v in parameters.items()
+        ]
 
         rejection_strings = [
-            '{k}: {v}'.format(
-                k=k, 
-                v=str(v).strip().replace('\n','\n\t'),
-                )
-            for k,v in sorted(rejections.items())
+            "{k}: {v}".format(
+                k=k,
+                v=str(v).strip().replace("\n", "\n\t"),
+            )
+            for k, v in sorted(rejections.items())
         ]
 
         s_ = (
-            'Filter Type: {name}\n'
-            '| Parameters: \n'
-            '|\t{parameters}\n'
-            '| Rejected Datasets: \n'
-            '|\t{rejections}\n'
-            '`---->'
-            ).format(
-            name = self.name,
-            parameters = (
-                '\n'.join(parameter_strings).strip().replace('\n','\n|\t')
-                if parameter_strings else "None"
-                ),
-            rejections = (
-                '\n'.join(rejection_strings).strip().replace('\n','\n|\t')
-                if rejection_strings else "None"
-                ),
-            )
+            "Filter Type: {name}\n"
+            "| Parameters: \n"
+            "|\t{parameters}\n"
+            "| Rejected Datasets: \n"
+            "|\t{rejections}\n"
+            "`---->"
+        ).format(
+            name=self.name,
+            parameters=(
+                "\n".join(parameter_strings).strip().replace("\n", "\n|\t")
+                if parameter_strings
+                else "None"
+            ),
+            rejections=(
+                "\n".join(rejection_strings).strip().replace("\n", "\n|\t")
+                if rejection_strings
+                else "None"
+            ),
+        )
 
         return s_.strip()
 
@@ -81,7 +82,7 @@ class DatasetFilter(object):
         return {}
 
     def is_valid(self, dataset):
-        raise Exception('not implemented')
+        raise Exception("not implemented")
 
 
 class ManualDatasetFilter(DatasetFilter):
@@ -93,7 +94,7 @@ class ManualDatasetFilter(DatasetFilter):
 
         super(ManualDatasetFilter, self).__init__()
 
-        if not hasattr(rejections, "keys"): 
+        if not hasattr(rejections, "keys"):
             rejections = dict.fromkeys(rejections, None)
 
         self.rejections.update(rejections)
@@ -104,12 +105,10 @@ class ManualDatasetFilter(DatasetFilter):
 
         # Create a new dataset
         new_datasets = {
-            dtag: d
-            for dtag, d in mcd.datasets.items()
-            if (dtag not in remove_datasets)
+            dtag: d for dtag, d in mcd.datasets.items() if (dtag not in remove_datasets)
         }
         new_dataset = mcd.new_from_datasets(
-            datasets = new_datasets,
+            datasets=new_datasets,
         )
 
         return new_dataset
@@ -128,18 +127,18 @@ class InclusiveDatasetTagFilter(DatasetFilter):
     def parameters(self):
 
         p_ = {
-            'dataset_tags' : self.dataset_tags,
+            "dataset_tags": self.dataset_tags,
         }
 
         return p_
 
     def get_dataset_tag(self, dataset):
 
-        if dataset.tag is None: 
+        if dataset.tag is None:
             raise ValueError(
                 "This function can only be used with labelled datasets with a 'tag' attribute. "
                 "Datasets can be labelled using the label method."
-                )
+            )
 
         return dataset.tag
 
@@ -154,7 +153,7 @@ class InclusiveDatasetTagFilter(DatasetFilter):
 class ExclusiveDatasetTagFilter(DatasetFilter):
 
     name = "ExclusiveDatasetTagFilter"
-    
+
     def __init__(self, dataset_tags):
 
         super(ExclusiveDatasetTagFilter, self).__init__()
@@ -164,18 +163,18 @@ class ExclusiveDatasetTagFilter(DatasetFilter):
     def parameters(self):
 
         p_ = {
-            'dataset_tags' : self.dataset_tags,
+            "dataset_tags": self.dataset_tags,
         }
 
         return p_
 
     def get_dataset_tag(self, dataset):
 
-        if dataset.tag is None: 
+        if dataset.tag is None:
             raise ValueError(
                 "This function can only be used with labelled datasets with a 'tag' attribute. "
                 "Datasets can be labelled using the label method."
-                )
+            )
 
         return dataset.tag
 
@@ -188,7 +187,7 @@ class ExclusiveDatasetTagFilter(DatasetFilter):
 
 
 class HighResolutionFilter(DatasetFilter):
-    
+
     name = "HighResolutionFilter"
 
     def __init__(self, high_resolution_cutoff):
@@ -208,7 +207,7 @@ class HighResolutionFilter(DatasetFilter):
     def parameters(self):
 
         p_ = {
-            'high_resolution_cutoff' : self.high_resolution_cutoff,
+            "high_resolution_cutoff": self.high_resolution_cutoff,
         }
 
         return p_
@@ -238,8 +237,8 @@ class RValueFilter(DatasetFilter):
     def parameters(self):
 
         p_ = {
-            'max_rfree' : self.max_rfree,
-            'max_rwork' : self.max_rwork,
+            "max_rfree": self.max_rfree,
+            "max_rwork": self.max_rwork,
         }
 
         return p_
@@ -254,11 +253,11 @@ class RValueFilter(DatasetFilter):
 
     def is_valid(self, dataset, **kwargs):
 
-        if (self.max_rfree is not None):
+        if self.max_rfree is not None:
             if self.get_rfree(dataset) > self.max_rfree:
                 return False, "R-free is too high"
 
-        if (self.max_rwork is not None):
+        if self.max_rwork is not None:
             if self.get_rwork(dataset) > self.max_rwork:
                 return False, "R-work is too high"
 
@@ -278,7 +277,7 @@ class SpaceGroupFilter(DatasetFilter):
     def parameters(self):
 
         p_ = {
-            'reference_dataset' : self.reference_dataset,
+            "reference_dataset": self.reference_dataset,
         }
 
         return p_
@@ -289,7 +288,7 @@ class SpaceGroupFilter(DatasetFilter):
 
     def is_valid(self, dataset, reference_dataset=None, **kwargs):
 
-        if (self.reference_dataset is not None):
+        if self.reference_dataset is not None:
             reference_dataset = self.reference_dataset
 
         ref_sg = self.get_spacegroup(reference_dataset)
@@ -315,20 +314,20 @@ class IdenticalHierarchyFilter(DatasetFilter):
     def parameters(self):
 
         p_ = {
-            'reference_dataset' : reference_dataset,
-            'atom_selection_string' : self.atom_selection_string,
+            "reference_dataset": reference_dataset,
+            "atom_selection_string": self.atom_selection_string,
         }
 
         return p_
 
     def is_valid(self, dataset, reference_dataset=None, **kwargs):
 
-        if (self.reference_dataset is not None):
+        if self.reference_dataset is not None:
             reference_dataset = self.reference_dataset
 
         if not dataset.model.hierarchy.is_similar_hierarchy(
             reference_dataset.model.hierarchy
-            ):
+        ):
 
             return False, "Different structural compositions"
 
@@ -339,14 +338,14 @@ class IdenticalHierarchyFilter(DatasetFilter):
 
 
 class DatasetFilterGroup(DatasetFilter):
-    
+
     name = "DatasetFilterGroup"
 
     def __init__(self, filters=None):
 
         super(DatasetFilterGroup, self).__init__()
 
-        if (filters is None):
+        if filters is None:
             filters = []
 
         self.filters = filters
@@ -362,57 +361,60 @@ class DatasetFilterGroup(DatasetFilter):
     def __str__(self):
 
         parameters = self.parameters()
-        rejections = self.rejections 
+        rejections = self.rejections
         filters = self.filters
 
         parameter_strings = [
-            '{k}: {v}'.format(
-                k=k, 
-                v=str(v).strip().replace('\n','\n\t'),
-                )
-            for k,v in parameters.items()
-            ]
+            "{k}: {v}".format(
+                k=k,
+                v=str(v).strip().replace("\n", "\n\t"),
+            )
+            for k, v in parameters.items()
+        ]
 
         filter_strings = [
             "> Filter {i}\n\t{s}".format(
-                i = i+1, 
-                s = str(f).strip().replace('\n','\n\t'),
-                )
+                i=i + 1,
+                s=str(f).strip().replace("\n", "\n\t"),
+            )
             for i, f in enumerate(filters)
-            ]
+        ]
 
         rejection_strings = [
-            '{k}: {v}'.format(
-                k=k, 
-                v=str(v).strip().replace('\n','\n\t'),
-                )
-            for k,v in sorted(rejections.items())
+            "{k}: {v}".format(
+                k=k,
+                v=str(v).strip().replace("\n", "\n\t"),
+            )
+            for k, v in sorted(rejections.items())
         ]
 
         s_ = (
-            'Filter Type: {name}\n'
-            '| Parameters: \n'
-            '|\t{parameters}\n'
-            '| Filters: \n'
-            '|\t{filters}\n'
-            '| Rejected Datasets: \n'
-            '|\t{rejections}\n'
-            '`---->'
-            ).format(
-            name = self.name,
-            parameters = (
-                '\n'.join(parameter_strings).strip().replace('\n','\n|\t')
-                if parameter_strings else "None"
-                ),
-            filters = (
-                '\n'.join(filter_strings).strip().replace('\n','\n|\t')
-                if filter_strings else "None"
-                ),
-            rejections = (
-                '\n'.join(rejection_strings).strip().replace('\n','\n|\t')
-                if rejection_strings else "None"
-                ),
-            )
+            "Filter Type: {name}\n"
+            "| Parameters: \n"
+            "|\t{parameters}\n"
+            "| Filters: \n"
+            "|\t{filters}\n"
+            "| Rejected Datasets: \n"
+            "|\t{rejections}\n"
+            "`---->"
+        ).format(
+            name=self.name,
+            parameters=(
+                "\n".join(parameter_strings).strip().replace("\n", "\n|\t")
+                if parameter_strings
+                else "None"
+            ),
+            filters=(
+                "\n".join(filter_strings).strip().replace("\n", "\n|\t")
+                if filter_strings
+                else "None"
+            ),
+            rejections=(
+                "\n".join(rejection_strings).strip().replace("\n", "\n|\t")
+                if rejection_strings
+                else "None"
+            ),
+        )
 
         return s_.strip()
 
@@ -421,13 +423,14 @@ class DefaultDatasetFilter(DatasetFilterGroup):
 
     name = "DefaultDatasetFilter"
 
-    def __init__(self,
-        same_space_group_only = True,
-        similar_models_only = False,
-        max_rfree = None,
-        max_rwork = None,
-        reference_dataset = None,
-        ):
+    def __init__(
+        self,
+        same_space_group_only=True,
+        similar_models_only=False,
+        max_rfree=None,
+        max_rwork=None,
+        reference_dataset=None,
+    ):
 
         super(DefaultDatasetFilter, self).__init__()
 
@@ -439,37 +442,36 @@ class DefaultDatasetFilter(DatasetFilterGroup):
 
         # Create the list of filters
 
-        if (self.same_space_group_only is True):
+        if self.same_space_group_only is True:
             self.filters.append(
                 SpaceGroupFilter(
-                    reference_dataset = reference_dataset,
-                    )
+                    reference_dataset=reference_dataset,
                 )
+            )
 
-        if (self.similar_models_only is True):
+        if self.similar_models_only is True:
             self.filters.append(
                 IdenticalHierarchyFilter(
-                    reference_dataset = reference_dataset,
-                    )
+                    reference_dataset=reference_dataset,
                 )
+            )
 
         if [self.max_rwork, self.max_rfree].count(None) < 2:
             self.filters.append(
                 RValueFilter(
-                    max_rfree = max_rfree,
-                    max_rwork = max_rwork,
-                    )
+                    max_rfree=max_rfree,
+                    max_rwork=max_rwork,
                 )
+            )
 
     def parameters(self):
 
         p_ = {
-            'similar_models_only' : self.similar_models_only,
-            'same_space_group_only' : self.same_space_group_only,
-            'max_rfree' : self.max_rfree,
-            'max_rwork' : self.max_rwork,
-            'reference_dataset' : self.reference_dataset,
+            "similar_models_only": self.similar_models_only,
+            "same_space_group_only": self.same_space_group_only,
+            "max_rfree": self.max_rfree,
+            "max_rwork": self.max_rwork,
+            "reference_dataset": self.reference_dataset,
         }
 
         return p_
-

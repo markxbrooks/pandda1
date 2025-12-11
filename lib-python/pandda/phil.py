@@ -1,6 +1,7 @@
 import libtbx.phil
 
-pandda_phil = libtbx.phil.parse("""
+pandda_phil = libtbx.phil.parse(
+    """
 pandda
 {
     input
@@ -289,7 +290,7 @@ pandda
         .help = "Flags for terminating the program early"
     {
         dry_run = False
-            .help = "Find input files on disk, but exit before loading any datasets."
+            .help = "Find input wrappers on disk, but exit before loading any datasets."
             .type = bool
         setup_only = False
             .help = "Load datasets and create grid partition, but exit before analysis."
@@ -337,5 +338,6 @@ settings
             .type = str
     }
 }
-""", process_includes=True)
-
+""",
+    process_includes=True,
+)

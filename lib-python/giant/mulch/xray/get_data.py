@@ -1,4 +1,5 @@
 import giant.logs as lg
+
 logger = lg.getLogger(__name__)
 
 
@@ -26,10 +27,14 @@ class LoadFirstValidMillerArrayFromListOfColumnOptions(object):
         # Raise error if no columns are identified
         if dataset_sfs is None:
             raise ValueError(
-                'No matching structure factors were found in the reflection data for the provided dataset. \n' + \
-                'Looking for structure factors: \n\t{}\n'.format('\n\t'.join(map(' and '.join, sf_cols))) + \
-                'Structure factors in this dataset: \n\t{}\n'.format('\n\t'.join(mtz_obj.column_labels())) + \
-                'You may need to change the input structure_factors selection option.'
+                "No matching structure factors were found in the reflection data for the provided dataset. \n"
+                + "Looking for structure factors: \n\t{}\n".format(
+                    "\n\t".join(map(" and ".join, sf_cols))
+                )
+                + "Structure factors in this dataset: \n\t{}\n".format(
+                    "\n\t".join(mtz_obj.column_labels())
+                )
+                + "You may need to change the input structure_factors selection option."
             )
 
         miller_array = dataset.data.get_structure_factors(columns=dataset_sfs)

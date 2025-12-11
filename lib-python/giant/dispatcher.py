@@ -1,8 +1,9 @@
-import giant.logs as lg
-logger = lg.getLogger(__name__)
-
 import procrunner
+
+import giant.logs as lg
 from giant.paths import is_available
+
+logger = lg.getLogger(__name__)
 
 
 class Dispatcher(object):
@@ -10,7 +11,9 @@ class Dispatcher(object):
     def __init__(self, program):
 
         if not is_available(program):
-            raise ValueError("Can't find the program '{!s}'. Is it available?".format(program))
+            raise ValueError(
+                "Can't find the program '{!s}'. Is it available?".format(program)
+            )
 
         self.program = program
         self.command = [program]
@@ -23,9 +26,14 @@ class Dispatcher(object):
 
     def __str__(self):
         return (
-            'Program:\n\t' + self.command[0] + '\n' +
-            'Command line arguments:\n\t' + '\n\t'.join(self.command[1:] if self.command[1:] else ['None']) + '\n' +
-            'Standard Input:\n\t' + (self.stdin if self.stdin is not None else 'None\n').replace('\n','\n\t')
+            "Program:\n\t"
+            + self.command[0]
+            + "\n"
+            + "Command line arguments:\n\t"
+            + "\n\t".join(self.command[1:] if self.command[1:] else ["None"])
+            + "\n"
+            + "Standard Input:\n\t"
+            + (self.stdin if self.stdin is not None else "None\n").replace("\n", "\n\t")
         )
 
     def append_arg(self, arg):
@@ -36,8 +44,8 @@ class Dispatcher(object):
 
     def append_stdin(self, line):
         if self.stdin is None:
-            self.stdin = ''
-        self.stdin += line.strip('\n') + '\n'
+            self.stdin = ""
+        self.stdin += line.strip("\n") + "\n"
 
     def extend_stdin(self, lines):
         for line in lines:
@@ -47,54 +55,48 @@ class Dispatcher(object):
         return str(self)
 
     def as_command(self):
-        out_str = ' '.join(self.command)
+        out_str = " ".join(self.command)
         if self.stdin:
-            out_str += (' <<eof\n' + self.stdin + '\neof')
+            out_str += " <<eof\n" + self.stdin + "\neof"
         return out_str
 
     def run(self):
 
-        assert self.result is None, 'Program has already been run.'
+        assert self.result is None, "Program has already been run."
 
         self.result = procrunner.run(
-            command = self.command,
-            timeout = self.timeout,
-            debug = self.debug,
-            stdin = (
-                bytes(self.stdin, 'utf-8')
-                if self.stdin is not None
-                else None
-                ),
-            print_stdout = False,
-            print_stderr = False,
-            #callback_stdout = None,
-            #callback_stderr = None,
-            #environment = None,
-            #environment_override = None,
-            #win32resolve = True,
-            working_directory = self.working_directory,
+            command=self.command,
+            timeout=self.timeout,
+            debug=self.debug,
+            stdin=(bytes(self.stdin, "utf-8") if self.stdin is not None else None),
+            print_stdout=False,
+            print_stderr=False,
+            # callback_stdout = None,
+            # callback_stderr = None,
+            # environment = None,
+            # environment_override = None,
+            # win32resolve = True,
+            working_directory=self.working_directory,
         )
 
         return self.result
 
     def write_output(self, log_file):
 
-        separator = '\n----------------------\n'
+        separator = "\n----------------------\n"
 
-        with open(log_file, 'a') as fh:
+        with open(log_file, "a") as fh:
 
             fh.write(separator)
-            fh.write('Command information:\n')
-            fh.write(self.as_string()+'\n')
+            fh.write("Command information:\n")
+            fh.write(self.as_string() + "\n")
             fh.write(separator)
-            fh.write('Command to re-run:\n')
-            fh.write(self.as_command()+'\n')
+            fh.write("Command to re-run:\n")
+            fh.write(self.as_command() + "\n")
             fh.write(separator)
-            fh.write('Program STDOUT:\n')
+            fh.write("Program STDOUT:\n")
             fh.write(str(self.result.stdout))
             fh.write(separator)
-            fh.write('Program STDERR:\n')
+            fh.write("Program STDERR:\n")
             fh.write(str(self.result.stderr))
             fh.write(separator)
-
-

@@ -1,18 +1,18 @@
-
 from .base_processors import (
+    Processor,
+    ProcessorDict,
+    ProcessorJoblib,
     ProcessorNotAvailable,
     ProcessWrapper,
-    ProcessorDict,
-    Processor,
-    ProcessorJoblib,
-    )
+)
 
-try: 
+try:
     from .luigi_processor import ProcessorLuigiSGE
-except: 
+except:
     ProcessorLuigiSGE = ProcessorNotAvailable
 
 basic_processor = Processor()
+
 
 def wrapper_call(func):
     return func()

@@ -2,55 +2,63 @@ import argparse
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
-
-import gemmi
 
 
 class Args(object):
     def __init__(self):
         parser = argparse.ArgumentParser()
         # IO
-        parser.add_argument("-r", "--root_path",
-                            type=str,
-                            help="The directory OF THE ROOT OF THE XCHEM DATABASE",
-                            required=True
-                            )
+        parser.add_argument(
+            "-r",
+            "--root_path",
+            type=str,
+            help="The directory OF THE ROOT OF THE XCHEM DATABASE",
+            required=True,
+        )
 
-        parser.add_argument("-o", "--out_dir",
-                            type=str,
-                            help="The directory for output and intermediate files to be saved to",
-                            required=True
-                            )
+        parser.add_argument(
+            "-o",
+            "--out_dir",
+            type=str,
+            help="The directory for output and intermediate wrappers to be saved to",
+            required=True,
+        )
 
-        parser.add_argument("-n", "--n_procs",
-                            type=str,
-                            help="Number of processes to start",
-                            required=True
-                            )
+        parser.add_argument(
+            "-n",
+            "--n_procs",
+            type=str,
+            help="Number of processes to start",
+            required=True,
+        )
 
-        parser.add_argument("-c", "--clean_run",
-                            type=bool,
-                            help="Number of processes to start",
-                            default=True,
-                            )
+        parser.add_argument(
+            "-c",
+            "--clean_run",
+            type=bool,
+            help="Number of processes to start",
+            default=True,
+        )
 
-        parser.add_argument("--mtz_regex",
-                            type=str,
-                            help="Number of processes to start",
-                            default="dimple.mtz",
-                            )
+        parser.add_argument(
+            "--mtz_regex",
+            type=str,
+            help="Number of processes to start",
+            default="dimple.mtz",
+        )
 
-        parser.add_argument("--pdb_regex",
-                            type=str,
-                            help="Number of processes to start",
-                            default="dimple.pdb",
-                            )
-        parser.add_argument("--structure_factors",
-                            type=str,
-                            help="Number of processes to start",
-                            default="FWT,PHWT",
-                            )
+        parser.add_argument(
+            "--pdb_regex",
+            type=str,
+            help="Number of processes to start",
+            default="dimple.pdb",
+        )
+        parser.add_argument(
+            "--structure_factors",
+            type=str,
+            help="Number of processes to start",
+            default="FWT,PHWT",
+        )
 
         args = parser.parse_args()
 
@@ -69,18 +77,17 @@ class Args(object):
 
 
 class ClusterFSModel(object):
-    def __init__(self,
-                 input_dir,
-                 output_dir,
-                 ):
-
+    def __init__(
+        self,
+        input_dir,
+        output_dir,
+    ):
 
         self.input_dir = input_dir
         self.output_dir = output_dir
         self.cluster_table_path = output_dir / "clustering.csv"
         self.cluster_html_path = output_dir / "clustering.html"
         self.initial_model_dirs = {path.name: path for path in input_dir.glob("*")}
-
 
 
 def map_dict(f, dictionary):
@@ -106,58 +113,65 @@ def cluster():
     pass
 
 
-def make_table(embedding,
-               clustering,
-               ):
+def make_table(
+    embedding,
+    clustering,
+):
     pass
 
 
-def make_clustering_html(embedding,
-                         clustering,
-                         cluster_html_path,
-                         ):
+def make_clustering_html(
+    embedding,
+    clustering,
+    cluster_html_path,
+):
     pass
 
 
 def main():
     args = Args()
 
-    fs = ClusterFSModel(args.data_dirs,
-                        args.out_dir,
-                        )
+    fs = ClusterFSModel(
+        args.data_dirs,
+        args.out_dir,
+    )
 
-    datasets = map_dict(Dataset.from_path,
-                        fs.initial_model_dirs,
-                        )
+    datasets = map_dict(
+        Dataset.from_path,
+        fs.initial_model_dirs,
+    )
 
-    truncated_datasets = map_dict(truncate_dataset,
-                                  datasets,
-                                  )
+    truncated_datasets = map_dict(
+        truncate_dataset,
+        datasets,
+    )
 
-    xmaps = map_dict(XMap.from_dataset,
-                     truncated_datasets,
-                     )
+    xmaps = map_dict(
+        XMap.from_dataset,
+        truncated_datasets,
+    )
 
-    arrays = map_dict(np.array,
-                      xmaps,
-                      )
+    arrays = map_dict(
+        np.array,
+        xmaps,
+    )
 
     embedding = embed(arrays)
 
     clustering = cluster(embedding)
 
-    table = make_table(embedding,
-                       clustering,
-                       )
+    table = make_table(
+        embedding,
+        clustering,
+    )
 
-    make_clustering_html(embedding,
-                         clustering,
-                         fs.cluster_html_path,
-                         )
+    make_clustering_html(
+        embedding,
+        clustering,
+        fs.cluster_html_path,
+    )
 
     table.to_csv(str(fs.cluster_table_path))
-
-
 
 
 if __name__ == "__main__":

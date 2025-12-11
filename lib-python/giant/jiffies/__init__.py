@@ -1,80 +1,84 @@
+import os
+import sys
+
 import giant.logs as lg
+from giant import ModuleInfo
+from giant.exceptions import Failure, Sorry
+
 logger = lg.getLogger(__name__)
 
-import os, sys
-
-from giant.exceptions import Sorry, Failure
-
-from giant import module_info
 
 def show_version_and_exit_maybe(module_info, args):
 
-    if '--version' not in args:
+    if "--version" not in args:
         return
 
     if module_info is None:
 
-        logger('no version information available')
+        logger("no version information available")
 
     else:
 
         logger(
-            '{name} version: {version}'.format(
-                name = module_info.name,
-                version = module_info.version,
-                )
+            "{name} version: {version}".format(
+                name=module_info.name,
+                version=module_info.version,
             )
+        )
 
     sys.exit()
+
 
 def show_defaults_and_exit_maybe(master_phil, args):
     """Show master_phil and exit if requested"""
 
     attributes_level = expert_level = 0
 
-    if '-h' in args:
+    if "-h" in args:
         attributes_level = 1
-    if '-hh' in args:
+    if "-hh" in args:
         attributes_level = 2
-    if '-hhh' in args:
+    if "-hhh" in args:
         attributes_level = 3
 
-    if '-a' in args:
+    if "-a" in args:
         expert_level = 1
-    if '-aa' in args:
+    if "-aa" in args:
         expert_level = 2
-    if '-aaa' in args:
+    if "-aaa" in args:
         expert_level = 3
 
     if not (
-        ('?' in args) or
-        ('--show-defaults' in args) or
-        (not attributes_level==expert_level==0)
-        ):
+        ("?" in args)
+        or ("--show-defaults" in args)
+        or (not attributes_level == expert_level == 0)
+    ):
 
         return
 
     logger(
-        '\n====================== Showing Default Parameters =====================\n'
-        )
+        "\n====================== Showing Default Parameters =====================\n"
+    )
 
     master_phil.show(
-        expert_level = expert_level,
-        attributes_level = attributes_level,
-        )
+        expert_level=expert_level,
+        attributes_level=attributes_level,
+    )
 
     raise SystemExit(
-        '\n============================= Now Exiting =============================\n'
-        )
+        "\n============================= Now Exiting =============================\n"
+    )
+
 
 def parse_phil_args(
     master_phil,
     args,
-    blank_arg_prepend = None,
-    home_scope = None,
-    ):
+    blank_arg_prepend=None,
+    home_scope=None,
+):
 
     import copy
+
     import libtbx.phil
 
     if blank_arg_prepend is None:
@@ -84,47 +88,41 @@ def parse_phil_args(
     elif isinstance(blank_arg_prepend, dict):
 
         for item in blank_arg_prepend.values():
-            assert '=' in item
+            assert "=" in item
 
     elif isinstance(blank_arg_prepend, str):
 
-        assert '=' in blank_arg_prepend
+        assert "=" in blank_arg_prepend
 
     else:
 
-        raise Exception('blank_arg_prepend must be str or dict')
+        raise Exception("blank_arg_prepend must be str or dict")
 
     # Copy the args so that we can remove items from the list without affecting args etc
     args = copy.copy(args)
 
     # Construct interpreter
     cmd_interpr = master_phil.command_line_argument_interpreter(
-        home_scope = home_scope,
-        )
+        home_scope=home_scope,
+    )
 
-    # Process any args that are eff files
+    # Process any args that are eff wrappers
     eff_files = [
-        f for f in args
+        f
+        for f in args
         if (
-            (f.endswith('.eff') or f.endswith('.def'))
-            and
-            (not f.count('='))
-            and
-            os.path.isfile(f)
-            )
-        ]
+            (f.endswith(".eff") or f.endswith(".def"))
+            and (not f.count("="))
+            and os.path.isfile(f)
+        )
+    ]
 
     # Remove them from the original lists
     [args.remove(f) for f in eff_files]
 
-    # Parse the 'eff' files - these should contain phils
-    eff_sources = [
-        libtbx.phil.parse(
-            open(f, 'r').read()
-            )
-        for f in eff_files
-        ]
-    #eff_sources = [cmd_interpr.process(open(f, 'r').read()) for f in eff_files]
+    # Parse the 'eff' wrappers - these should contain phils
+    eff_sources = [libtbx.phil.parse(open(f, "r").read()) for f in eff_files]
+    # eff_sources = [cmd_interpr.process(open(f, 'r').read()) for f in eff_files]
 
     # Process input arguments
     arg_sources = []
@@ -134,7 +132,7 @@ def parse_phil_args(
         try:
 
             # Prepend if blank
-            if '=' not in arg:
+            if "=" not in arg:
 
                 if isinstance(blank_arg_prepend, dict):
 
@@ -147,21 +145,19 @@ def parse_phil_args(
 
                         if arg.endswith(key):
 
-                            arg = blank_arg_prepend[key]+arg
+                            arg = blank_arg_prepend[key] + arg
                             found_key = True
                             break
 
-                    if (found_key == False) and (None in list(blank_arg_prepend.keys())):
+                    if (found_key == False) and (
+                        None in list(blank_arg_prepend.keys())
+                    ):
 
-                        arg = (
-                            blank_arg_prepend[None]+arg
-                            )
+                        arg = blank_arg_prepend[None] + arg
 
                 elif isinstance(blank_arg_prepend, str):
 
-                    arg = (
-                        blank_arg_prepend+arg
-                        )
+                    arg = blank_arg_prepend + arg
 
             # Attempt to process arg
             cmd_line_args = cmd_interpr.process(arg=arg)
@@ -178,87 +174,87 @@ def parse_phil_args(
 
     # Extract Scope object (putting eff sources first so that they're overridden if double-defined)
     working_phil = master_phil.fetch(
-        sources = (
-            eff_sources + arg_sources
-            ),
-        )
+        sources=(eff_sources + arg_sources),
+    )
 
     return working_phil
+
 
 def extract_params_default(
     master_phil,
     args,
-    blank_arg_prepend = None,
-    home_scope = None,
-    module_info = None,
-    ):
+    blank_arg_prepend=None,
+    home_scope=None,
+    module_info=None,
+):
     """Extract the parameters by a default script"""
 
     show_version_and_exit_maybe(
-        module_info = module_info,
-        args = args,
-        )
+        module_info=module_info,
+        args=args,
+    )
 
     show_defaults_and_exit_maybe(
-        master_phil = master_phil,
-        args = args,
-        )
+        master_phil=master_phil,
+        args=args,
+    )
 
     working_phil = parse_phil_args(
-        master_phil = master_phil,
-        args = args,
-        blank_arg_prepend = blank_arg_prepend,
-        home_scope = home_scope,
-        )
+        master_phil=master_phil,
+        args=args,
+        blank_arg_prepend=blank_arg_prepend,
+        home_scope=home_scope,
+    )
 
     return working_phil
 
 
 class run_default(object):
 
-    _module_info = module_info
+    _module_info = ModuleInfo
 
-    def __init__(self,
+    def __init__(
+        self,
         run,
         master_phil,
         args,
-        blank_arg_prepend = None,
-        program = '',
-        description = '',
-        ):
+        blank_arg_prepend=None,
+        program="",
+        description="",
+    ):
         """Run a program via a standard setup of functions and objects"""
 
         logger = lg.setup_logging_basic(
-            name = '__main__', # setup root logging when using run_default
+            name="__main__",  # setup root logging when using run_default
         )
 
         logger(
             self._module_info.header_text.format(
-                program = program,
-                description = description,
-                )
+                program=program,
+                description=description,
             )
+        )
 
         working_phil = extract_params_default(
-            master_phil = master_phil,
-            args = args,
-            blank_arg_prepend = blank_arg_prepend,
-            module_info = self._module_info,
-            )
+            master_phil=master_phil,
+            args=args,
+            blank_arg_prepend=blank_arg_prepend,
+            module_info=self._module_info,
+        )
 
         try:
 
             out = run(
-                params = working_phil.extract(),
-                )
+                params=working_phil.extract(),
+            )
 
         except Exception as e:
 
             self.report_warnings()
 
             self.process_exception_default(
-                exception = e,
-                )
+                exception=e,
+            )
 
         self.report_warnings()
 
@@ -270,21 +266,21 @@ class run_default(object):
         except Failure as e:
             e.args = (
                 (
-                    '\n\n' +
-                    str(e.args[0]) +
-                    '\n\n(This type of error normally indicates that something has gone wrong within the program that is not fixable by the user.'
-                    '\nYou may need to contact the developer -- for contact info please visit https://pandda.bitbucket.io .)\n'
-                    ),
-                ) + e.args[1:]
+                    "\n\n"
+                    + str(e.args[0])
+                    + "\n\n(This type of error normally indicates that something has gone wrong within the program that is not fixable by the user."
+                    "\nYou may need to contact the developer -- for contact info please visit https://pandda.bitbucket.io .)\n"
+                ),
+            ) + e.args[1:]
             raise
         except (Sorry, IOError, ValueError) as e:
             e.args = (
                 (
-                    '\n\n' +
-                    str(e.args[0]) +
-                    '\n\n(This type of error normally indicates that something is wrong with the input provided to the program that is fixable.)\n'
-                    ),
-                ) + e.args[1:]
+                    "\n\n"
+                    + str(e.args[0])
+                    + "\n\n(This type of error normally indicates that something is wrong with the input provided to the program that is fixable.)\n"
+                ),
+            ) + e.args[1:]
             raise
         else:
             raise
@@ -292,11 +288,11 @@ class run_default(object):
     def report_warnings(self):
 
         warning_handler = lg.get_warning_handler(
-            logger = logger,
-            )
+            logger=logger,
+        )
 
-        if warning_handler is not None: 
+        if warning_handler is not None:
 
             warning_handler.report_all(
                 __name__,
-                )
+            )

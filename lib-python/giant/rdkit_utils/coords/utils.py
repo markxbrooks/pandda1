@@ -1,12 +1,14 @@
-import os, sys
+import os
+import sys
 
 from bamboo.rdkit_utils.mol import check_pdb_readable
-
 from rdkit import Chem
+
 
 def get_centroid_from_file(model):
     """Get the centroid of an isolated ligand"""
     return get_centroid_from_mol(Chem.MolFromPDBFile(model))
+
 
 def get_centroid_from_mol(mol):
     """Get the centroid of a mol"""
@@ -33,9 +35,12 @@ def get_centroid_from_mol(mol):
         sumz += pos.z
 
     # Check we've got as many as we were expecting
-    assert count == num_atm, 'Number of atoms used to calculate centroid != number of heavy atoms'
+    assert (
+        count == num_atm
+    ), "Number of atoms used to calculate centroid != number of heavy atoms"
 
-    return (sumx/count,sumy/count,sumz/count)
+    return (sumx / count, sumy / count, sumz / count)
+
 
 def calculate_coordinate_differences(model1, model2):
     """Calculate the differences between the atom coordinates of two identical structures"""
@@ -48,14 +53,29 @@ def calculate_coordinate_differences(model1, model2):
 
     # Check that the mols are identical-ish
     if mol1.GetNumHeavyAtoms() != mol2.GetNumHeavyAtoms():
-        raise EqualityError('Molecules are not identical (Num Atoms) {!s} != {!s}.\n{!s}\n{!s}'.format(mol1.GetNumHeavyAtoms(),mol2.GetNumHeavyAtoms(),Chem.MolToSmiles(mol1),Chem.MolToSmiles(mol2)))
+        raise EqualityError(
+            "Molecules are not identical (Num Atoms) {!s} != {!s}.\n{!s}\n{!s}".format(
+                mol1.GetNumHeavyAtoms(),
+                mol2.GetNumHeavyAtoms(),
+                Chem.MolToSmiles(mol1),
+                Chem.MolToSmiles(mol2),
+            )
+        )
     if mol1.GetNumBonds() != mol2.GetNumBonds():
-        raise EqualityError('Molecules are not identical (Num Bonds) {!s} != {!s}:\n{!s}\n{!s}'.format(mol1.GetNumBonds(),mol2.GetNumBonds(),Chem.MolToSmiles(mol1), Chem.MolToSmiles(mol2)))
+        raise EqualityError(
+            "Molecules are not identical (Num Bonds) {!s} != {!s}:\n{!s}\n{!s}".format(
+                mol1.GetNumBonds(),
+                mol2.GetNumBonds(),
+                Chem.MolToSmiles(mol1),
+                Chem.MolToSmiles(mol2),
+            )
+        )
 
     # Gets atoms in mol1 (e.g. 14,5,3...) that match mol2 (1,2,3...)
     matchpatterns = mol1.GetSubstructMatches(mol2, uniquify=False)
     # Check to see if the molecules actually DO contain common substructures
-    if not matchpatterns: return None
+    if not matchpatterns:
+        return None
 
     differences = []
     # Get the conformers to access the coords
@@ -76,6 +96,7 @@ def calculate_coordinate_differences(model1, model2):
     # Return the differences corresponding to all of the ways of matching the molecules
     return differences
 
+
 def get_atomic_equivalences(mol1, mol2):
     """Returns the list of atoms in mol1 that match with the atoms in mol2 => [pattern1, pattern2] ... pattern1 = [(mol1atm, mol2atm), ...]"""
 
@@ -86,10 +107,11 @@ def get_atomic_equivalences(mol1, mol2):
     atom_pairings = []
 
     if mol1.GetNumHeavyAtoms() != mol2.GetNumHeavyAtoms():
-        raise EqualityError('Heavy Atom Numbers are not equal!')
+        raise EqualityError("Heavy Atom Numbers are not equal!")
 
     for match_pattern in match_patterns:
-        atom_pairings.append(list(zip(match_pattern,range(0,mol1.GetNumHeavyAtoms()))))
+        atom_pairings.append(
+            list(zip(match_pattern, range(0, mol1.GetNumHeavyAtoms())))
+        )
 
     return atom_pairings
-

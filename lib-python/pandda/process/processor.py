@@ -1,12 +1,9 @@
 from collections import OrderedDict
 
 import joblib
-
 import luigi
-from pandda_2.luigi_sge import SGEJobTask
-
 from libtbx import easy_mp
-
+from pandda_2.luigi_sge import SGEJobTask
 
 # class Processor:
 #     def __init__(self):
@@ -28,16 +25,18 @@ from libtbx import easy_mp
 #         repr = OrderedDict()
 #         return repr
 
+
 class Processor(object):
     def __init__(self):
         pass
 
-    def __call__(self,
-                 funcs,
-                 output_paths=None,
-                 result_loader=None,
-                 shared_tmp_dir=None,
-                 ):
+    def __call__(
+        self,
+        funcs,
+        output_paths=None,
+        result_loader=None,
+        shared_tmp_dir=None,
+    ):
         results = []
         for func in funcs:
             result = func()
@@ -63,14 +62,15 @@ class Task(SGEJobTask):
 
 class ProcessorLuigi(object):
 
-    def __init__(self,
-                 jobs=10,
-                 parallel_env="smp",
-                 n_cpu=12,
-                 run_locally=False,
-                 h_vmem=100,
-                 m_mem_free=5,
-                 ):
+    def __init__(
+        self,
+        jobs=10,
+        parallel_env="smp",
+        n_cpu=12,
+        run_locally=False,
+        h_vmem=100,
+        m_mem_free=5,
+    ):
         self.jobs = jobs
         self.parallel_env = parallel_env
         self.n_cpu = n_cpu
@@ -78,36 +78,36 @@ class ProcessorLuigi(object):
         self.h_vmem = h_vmem
         self.m_mem_free = m_mem_free
 
-    def __call__(self,
-                 funcs,
-                 output_paths=None,
-                 result_loader=None,
-                 shared_tmp_dir=None,
-                 ):
-        tasks = [Task(func=func,
-                      output_path=output_path,
-                      shared_tmp_dir="/dls/science/groups/i04-1/conor_dev/pandda/lib-python/pandda/pandda_analyse_dask/luigi_test",
-                      parallel_env=self.parallel_env,
-                      n_cpu=self.n_cpu,
-                      run_locally=False,
-                      h_vmem=self.h_vmem,
-                      m_mem_free=self.m_mem_free,
-                      )
-                 for func, output_path
-                 in zip(funcs, output_paths)
-                 ]
+    def __call__(
+        self,
+        funcs,
+        output_paths=None,
+        result_loader=None,
+        shared_tmp_dir=None,
+    ):
+        tasks = [
+            Task(
+                func=func,
+                output_path=output_path,
+                shared_tmp_dir="/dls/science/groups/i04-1/conor_dev/pandda/lib-python/pandda/pandda_analyse_dask/luigi_test",
+                parallel_env=self.parallel_env,
+                n_cpu=self.n_cpu,
+                run_locally=False,
+                h_vmem=self.h_vmem,
+                m_mem_free=self.m_mem_free,
+            )
+            for func, output_path in zip(funcs, output_paths)
+        ]
 
-        luigi.build(tasks,
-                    local_scheduler=True,
-                    workers=self.jobs,
-                    detailed_summary=False,
-                    )
+        luigi.build(
+            tasks,
+            local_scheduler=True,
+            workers=self.jobs,
+            detailed_summary=False,
+        )
 
         if result_loader:
-            results = [result_loader(output_path)
-                       for output_path
-                       in output_paths
-                       ]
+            results = [result_loader(output_path) for output_path in output_paths]
 
         else:
             results = []
@@ -130,9 +130,10 @@ class ProcessorDict(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
 
-    def __call__(self,
-                 funcs,
-                 ):
+    def __call__(
+        self,
+        funcs,
+    ):
         results = {}
         for key, func in funcs.items():
             result = func()
@@ -146,47 +147,41 @@ class ProcessorDict(object):
 
 
 class ProcessorDictJoblib(object):
-    def __init__(self,
-                 cpus=21,
-                 verbosity=8,
-                 ):
+    def __init__(
+        self,
+        cpus=21,
+        verbosity=8,
+    ):
         self.cpus = cpus
         self.verbosity = verbosity
         self.parallel = None
 
     def __enter__(self):
-        self.parallel = joblib.Parallel(n_jobs=self.cpus,
-                                        verbose=self.verbosity,
-                                        ).__enter__()
+        self.parallel = joblib.Parallel(
+            n_jobs=self.cpus,
+            verbose=self.verbosity,
+        ).__enter__()
 
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.parallel.__exit__(exc_type, exc_val, exc_tb)
 
-    def __call__(self,
-                 funcs,
-                 ):
+    def __call__(
+        self,
+        funcs,
+    ):
 
         if hasattr(funcs, "keys"):
 
             keys = list(funcs.keys())
             values = [funcs[key] for key in keys]
 
-            processed = self.parallel(joblib.delayed(value)()
-                                      for value
-                                      in values
-                                      )
+            processed = self.parallel(joblib.delayed(value)() for value in values)
 
-            results = {key: processed[i]
-                       for i, key
-                       in enumerate(keys)
-                       }
+            results = {key: processed[i] for i, key in enumerate(keys)}
         else:
-            results = self.parallel(func
-                                    for func
-                                    in funcs
-                                    )
+            results = self.parallel(func for func in funcs)
 
         return results
 
@@ -198,20 +193,19 @@ class ProcessorDictJoblib(object):
 
 
 class ProcessorJoblib(object):
-    def __init__(self,
-                 cpus=21,
-                 verbosity=8,
-                 ):
+    def __init__(
+        self,
+        cpus=21,
+        verbosity=8,
+    ):
         self.cpus = cpus
         self.verbosity = verbosity
 
     def __call__(self, funcs):
-        results = joblib.Parallel(n_jobs=self.cpus,
-                                  verbose=self.verbosity,
-                                  )(joblib.delayed(func)()
-                                    for func
-                                    in funcs
-                                    )
+        results = joblib.Parallel(
+            n_jobs=self.cpus,
+            verbose=self.verbosity,
+        )(joblib.delayed(func)() for func in funcs)
 
         return results
 
@@ -221,28 +215,28 @@ def wrap_call(f):
 
 
 class ProcessorDictEasyMP(object):
-    def __init__(self,
-                 cpus=21,
-                 verbosity=8,
-                 ):
+    def __init__(
+        self,
+        cpus=21,
+        verbosity=8,
+    ):
         self.cpus = cpus
         self.verbosity = verbosity
 
-    def __call__(self,
-                 funcs,
-                 ):
+    def __call__(
+        self,
+        funcs,
+    ):
         keys = list(funcs.keys())
         values = [funcs[key] for key in keys]
 
-        results = easy_mp.pool_map(fixed_func=wrap_call,
-                                   args=values,
-                                   processes=int(self.cpus),
-                                   )
+        results = easy_mp.pool_map(
+            fixed_func=wrap_call,
+            args=values,
+            processes=int(self.cpus),
+        )
 
-        results_dict = {key: results[i]
-                        for i, key
-                        in enumerate(keys)
-                        }
+        results_dict = {key: results[i] for i, key in enumerate(keys)}
 
         return results_dict
 

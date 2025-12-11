@@ -1,5 +1,5 @@
-from scitbx.array_family import flex
 from scitbx import simplex
+from scitbx.array_family import flex
 
 
 class _LeastSquaresFitter(object):
@@ -19,7 +19,9 @@ class _LeastSquaresFitter(object):
         if weights is not None:
             self.weight_array = flex.double(weights)
         else:
-            self.weight_array = flex.double(self.x_values.size(), 1.0/self.x_values.size())
+            self.weight_array = flex.double(
+                self.x_values.size(), 1.0 / self.x_values.size()
+            )
 
         assert self.x_values.size() == self.ref_values.size()
         assert self.x_values.size() == self.scl_values.size()
@@ -33,9 +35,9 @@ class _LeastSquaresFitter(object):
     def run(self, initial_simplex):
         """Calculate scaling"""
         # Optimise the simplex
-        self.optimised = simplex.simplex_opt(dimension = len(initial_simplex[0]),
-                                             matrix    = initial_simplex,
-                                             evaluator = self)
+        self.optimised = simplex.simplex_opt(
+            dimension=len(initial_simplex[0]), matrix=initial_simplex, evaluator=self
+        )
         # Extract solution
         self.optimised_values = self.optimised.get_solution()
 
@@ -57,20 +59,20 @@ class _LeastSquaresFitter(object):
             ref = self.ref_values
             val = values
 
-        return (ref-val).norm()/(ref.size()**0.5)
+        return (ref - val).norm() / (ref.size() ** 0.5)
 
     def target(self, vector):
         """Target function for the simplex optimisation"""
         scaled = self.transform(values=self.scl_values, params=vector)
-        diff = (scaled-self.ref_values)
-        diff_sq = diff*diff
-        result = flex.sum(self.weight_array*diff_sq)
+        diff = scaled - self.ref_values
+        diff_sq = diff * diff
+        result = flex.sum(self.weight_array * diff_sq)
         return result
 
     def transform(self, values, params=None):
         """Function defining how the fitting parameters are used to transform the input vectors"""
         if params is None:
-            params=self.optimised_values
+            params = self.optimised_values
         values = flex.double(values)
         assert values.size() == self.x_values.size()
         return self._scale(values=values, params=params)
@@ -87,16 +89,18 @@ class LinearScaling(_LeastSquaresFitter):
 
     def initialise_parameters(self):
         """Initialise starting simplex"""
-        v0 = 0.0    # 0th order - offset
-        v1 = 1.0    # 1st order - scale
-        self.starting_simplex = [    flex.double([v0,    v1]),
-                                     flex.double([v0,    v1+0.1]),
-                                     flex.double([v0+0.1,v1])      ]
-        return [v0,v1]
+        v0 = 0.0  # 0th order - offset
+        v1 = 1.0  # 1st order - scale
+        self.starting_simplex = [
+            flex.double([v0, v1]),
+            flex.double([v0, v1 + 0.1]),
+            flex.double([v0 + 0.1, v1]),
+        ]
+        return [v0, v1]
 
     def _scale(self, values, params):
-        v0,v1 = params
-        out = v0 + values*v1
+        v0, v1 = params
+        out = v0 + values * v1
         return out
 
 
@@ -104,14 +108,11 @@ class ExponentialScaling(_LeastSquaresFitter):
 
     def initialise_parameters(self):
         """Initialise starting simplex"""
-        v1 = 0.0    # 1st order - scale
-        self.starting_simplex = [    flex.double([v1-10]),
-                                     flex.double([v1+10])
-                                ]
+        v1 = 0.0  # 1st order - scale
+        self.starting_simplex = [flex.double([v1 - 10]), flex.double([v1 + 10])]
         return [v1]
 
     def _scale(self, values, params):
-        v1, = params
-        out = flex.exp(v1*self.x_values)*values
+        (v1,) = params
+        out = flex.exp(v1 * self.x_values) * values
         return out
-

@@ -1,11 +1,13 @@
-import giant.logs as lg
-logger = lg.getLogger(__name__)
+import os
+import sys
 
-import os, sys
+import giant.logs as lg
+
+logger = lg.getLogger(__name__)
 
 ############################################################################
 
-PROGRAM = 'multi.table_ones'
+PROGRAM = "multi.table_ones"
 
 DESCRIPTION = """
     Make a parameter eff file for phenix.table_one
@@ -14,8 +16,8 @@ DESCRIPTION = """
 ############################################################################
 
 blank_arg_prepend = {
-    '.pdb' : 'pdb=',
-    None : 'dir=',
+    ".pdb": "pdb=",
+    None: "dir=",
 }
 
 options_phil = """
@@ -27,8 +29,10 @@ options_phil = """
         .multiple = False
 """
 
-import libtbx.phil
-master_phil = libtbx.phil.parse("""
+import libtbx.phil  # noqa: E402
+
+master_phil = libtbx.phil.parse(
+    """
 input  {
     pdb = None
         .type = path
@@ -63,9 +67,10 @@ settings {
         .type = bool
 }
 """.replace(
-    '{options_phil}',
-    options_phil,
-))
+        "{options_phil}",
+        options_phil,
+    )
+)
 
 ############################################################################
 
@@ -112,23 +117,25 @@ output_eff = """table_one {{
 
 ############################################################################
 
+
 def run(params):
 
     if (not params.input.pdb) and (not params.input.dir):
-        raise IOError('Need to supply input.pdb OR input.dir')
+        raise IOError("Need to supply input.pdb OR input.dir")
 
-    if (params.input.pdb and params.input.dir):
-        raise IOError('Cannot supply input.pdb AND input.dir')
+    if params.input.pdb and params.input.dir:
+        raise IOError("Cannot supply input.pdb AND input.dir")
 
     if (params.input.pdb_style) and (not params.input.mtz_style):
-        params.input.mtz_style = params.input.pdb_style.replace('.pdb','')+'.mtz'
+        params.input.mtz_style = params.input.pdb_style.replace(".pdb", "") + ".mtz"
 
     out_file = params.output.parameter_file
     if os.path.exists(out_file):
-        raise IOError('Output file already exists: {}'.format(out_file))
+        raise IOError("Output file already exists: {}".format(out_file))
 
-    from giant.paths import foldername, filename
-    if params.input.labelling == 'foldername':
+    from giant.paths import filename, foldername
+
+    if params.input.labelling == "foldername":
         lab_func = foldername
     else:
         lab_func = filename
@@ -136,64 +143,73 @@ def run(params):
     # Build file list
     file_list = []
 
-    # From PDB files directly
+    # From PDB wrappers directly
     for pdb in params.input.pdb:
-        logger('Processing {}'.format(pdb))
-        mtz = pdb.replace('.pdb','.mtz')
+        logger("Processing {}".format(pdb))
+        mtz = pdb.replace(".pdb", ".mtz")
         if not os.path.exists(pdb):
-            raise IOError('PDB does not exist: {}'.format(pdb))
+            raise IOError("PDB does not exist: {}".format(pdb))
         if not os.path.exists(mtz):
-            raise IOError('MTZ does not exist: {}\nMTZs must be named the same as the pdb files (except for .mtz extension) when using input.pdb option'.format(mtz))
-        file_list.append((pdb,mtz))
+            raise IOError(
+                "MTZ does not exist: {}\nMTZs must be named the same as the pdb wrappers (except for .mtz extension) when using input.pdb option".format(
+                    mtz
+                )
+            )
+        file_list.append((pdb, mtz))
 
     # From directories
     from giant.paths import resolve_glob
+
     for d in sorted(params.input.dir):
-        logger('Processing directory: {}'.format(d))
+        logger("Processing directory: {}".format(d))
         try:
             pdb = resolve_glob(os.path.join(d, params.input.pdb_style), n=1)
             mtz = resolve_glob(os.path.join(d, params.input.mtz_style), n=1)
         except ValueError:
-            logger('PDB style/MTZ style did not resolve to the correct number of files')
+            logger(
+                "PDB style/MTZ style did not resolve to the correct number of wrappers"
+            )
             raise
-        file_list.append((pdb,mtz))
+        file_list.append((pdb, mtz))
 
-    out_str = ''
-    for pdb,mtz in file_list:
+    out_str = ""
+    for pdb, mtz in file_list:
         out_str += structure_block.format(
-            label = lab_func(pdb),
-            pdb = os.path.abspath(pdb),
-            mtz = os.path.abspath(mtz),
-            columns = params.options.column_labels,
-            rfree = params.options.r_free_label,
-            folder = os.path.dirname(os.path.abspath(pdb)),
+            label=lab_func(pdb),
+            pdb=os.path.abspath(pdb),
+            mtz=os.path.abspath(mtz),
+            columns=params.options.column_labels,
+            rfree=params.options.r_free_label,
+            folder=os.path.dirname(os.path.abspath(pdb)),
         )
 
-    output = output_eff.format(
-        structure_effs = out_str,
-        out_base = params.output.output_basename,
-        cpus = params.settings.cpus,
-    ).replace(
-        '{{','{'
-    ).replace(
-        '}}','}'
+    output = (
+        output_eff.format(
+            structure_effs=out_str,
+            out_base=params.output.output_basename,
+            cpus=params.settings.cpus,
+        )
+        .replace("{{", "{")
+        .replace("}}", "}")
     )
 
-    logger.subheading('Table One parameters')
+    logger.subheading("Table One parameters")
     logger(output)
 
-    with open(out_file, 'w') as fh:
+    with open(out_file, "w") as fh:
         fh.write(output)
+
 
 #######################################
 
-if __name__=='__main__':
+if __name__ == "__main__":
     from giant.jiffies import run_default
+
     run_default(
-        run                 = run,
-        master_phil         = master_phil,
-        args                = sys.argv[1:],
-        blank_arg_prepend   = blank_arg_prepend,
-        program             = PROGRAM,
-        description         = DESCRIPTION,
+        run=run,
+        master_phil=master_phil,
+        args=sys.argv[1:],
+        blank_arg_prepend=blank_arg_prepend,
+        program=PROGRAM,
+        description=DESCRIPTION,
     )

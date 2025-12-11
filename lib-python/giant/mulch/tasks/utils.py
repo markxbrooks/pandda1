@@ -1,5 +1,7 @@
 import giant.logs as lg
+
 logger = lg.getLogger(__name__)
+
 
 def run_program(prog):
 
@@ -7,32 +9,25 @@ def run_program(prog):
 
     result = prog.run()
 
-    if result['exitcode'] != 0:
+    if result["exitcode"] != 0:
 
-        logger.heading('{} exited with an error'.format(prog.program))
+        logger.heading("{} exited with an error".format(prog.program))
 
-        logger.subheading('Stdout')
+        logger.subheading("Stdout")
         logger(str(result.stdout))
-        
-        logger.subheading('Stderr')
+
+        logger.subheading("Stderr")
         logger(str(result.stderr))
 
-        raise Exception(
-            '{} exited with an error'.format(
-                prog.program
-                )
-            )
+        raise Exception("{} exited with an error".format(prog.program))
+
 
 def raise_missing(self, filepath, result):
 
-    logger.subheading('Stdout')
+    logger.subheading("Stdout")
     logger(str(result.stdout))
-    
-    logger.subheading('Stderr')
+
+    logger.subheading("Stderr")
     logger(str(result.stderr))
 
-    raise Exception(
-        'Failed: {} does not exist'.format(
-            str(filepath)
-            )
-        )
+    raise Exception("Failed: {} does not exist".format(str(filepath)))

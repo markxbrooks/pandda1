@@ -1,4 +1,5 @@
 import giant.logs as lg
+
 logger = lg.getLogger(__name__)
 
 
@@ -10,7 +11,7 @@ class DatasetFinder(object):
         self.name = None
 
     def __call__(self, mcd):
-        
+
         dataset_keys, datasets = list(zip(*list(mcd.datasets.items())))
 
         # Get the rankings of the datasets
@@ -22,7 +23,7 @@ class DatasetFinder(object):
         return dataset_keys[i_dst]
 
     def get_ranks(self, datasets):
-        raise Exception('not implemented in base class')
+        raise Exception("not implemented in base class")
 
 
 class DummyDatasetFinder(DatasetFinder):

@@ -21,11 +21,11 @@ class ProcessorDict(object):
 
     def __init__(self, processor=None):
         """
-        Wrapper around Processor that allows the supplying of jobs as a dictionary of jobs. 
+        Wrapper around Processor that allows the supplying of jobs as a dictionary of jobs.
         Results for each key, func pair will be returned as key, result dictionary.
         """
 
-        if (processor is None):
+        if processor is None:
             processor = Processor()
 
         self.processor = processor
@@ -38,11 +38,7 @@ class ProcessorDict(object):
 
         processed = self.processor(values)
 
-        results = {
-            k: processed[i]
-            for i, k 
-            in enumerate(keys)
-            }
+        results = {k: processed[i] for i, k in enumerate(keys)}
 
         return results
 
@@ -56,7 +52,7 @@ class BaseProcessor(object):
         return ProcessorDict(processor=self)
 
 
-class Processor(BaseProcessor): 
+class Processor(BaseProcessor):
 
     def __init__(self):
         pass
@@ -74,12 +70,13 @@ class Processor(BaseProcessor):
 
 class ProcessorJoblib(BaseProcessor):
 
-    def __init__(self, 
-        n_cpus, 
-        verbosity=8, 
+    def __init__(
+        self,
+        n_cpus,
+        verbosity=8,
         ignore_runtime_warnings=True,
-        backend = "multiprocessing",
-        ):
+        backend="multiprocessing",
+    ):
 
         self.n_cpus = n_cpus
         self.verbosity = verbosity
@@ -88,21 +85,20 @@ class ProcessorJoblib(BaseProcessor):
 
     def __call__(self, funcs):
 
-        import joblib, warnings
+        import warnings
+
+        import joblib
 
         with warnings.catch_warnings():
-        
-            if self.ignore_runtime_warnings: 
-                #warnings.simplefilter('ignore', category=RuntimeWarning)
+
+            if self.ignore_runtime_warnings:
+                # warnings.simplefilter('ignore', category=RuntimeWarning)
                 warnings.simplefilter("ignore")
 
             results = joblib.Parallel(
-                n_jobs = self.n_cpus,
-                verbose = self.verbosity,
-                backend = self.backend,
-                )(
-                joblib.delayed(f)() for f in funcs
-                )
-        
-        return results
+                n_jobs=self.n_cpus,
+                verbose=self.verbosity,
+                backend=self.backend,
+            )(joblib.delayed(f)() for f in funcs)
 
+        return results

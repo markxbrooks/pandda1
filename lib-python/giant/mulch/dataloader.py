@@ -1,18 +1,29 @@
-import giant.logs as lg
-
-
-logger = lg.getLogger(__name__)
-
 import os
 import pathlib as pl
 
-from giant.mulch.collection import (
-    MultiCrystalDataset,
-    CrystallographicDataset,
-)
-from giant.mulch.checks import (
-    CrystallographicDatasetChecker,
-)
+import giant.logs as lg
+from giant.mulch.checks import CrystallographicDatasetChecker
+from giant.mulch.collection import CrystallographicDataset, MultiCrystalDataset
+
+logger = lg.getLogger(__name__)
+
+
+def string_replace(file_path, text: str, subs: str, flags=0) -> None:
+    """
+    :param file_path: str
+    :param text: str
+    :param subs: str
+    :param flags: str
+    :return: None
+    """
+    with open(file_path, "r+") as file:
+        # read the file contents
+        file_contents = file.read()
+        text_pattern = re.compile(re.escape(text), flags)
+        file_contents = text_pattern.sub(subs, file_contents)
+        file.seek(0)
+        file.truncate()
+        file.write(file_contents)
 
 
 class DefaultInputDirectoryParser(object):
@@ -46,7 +57,7 @@ class DefaultInputDirectoryParser(object):
         self.empty_directories = None
 
     def __call__(self):
-        """Builds a list of input files from the command line arguments passed"""
+        """Builds a list of input wrappers from the command line arguments passed"""
 
         import glob
 
@@ -95,7 +106,7 @@ class DefaultInputDirectoryParser(object):
                     )
 
                 raise ValueError(
-                    "Multiple matching files found in input directory ({pdbs} and {mtzs})".format(
+                    "Multiple matching wrappers found in input directory ({pdbs} and {mtzs})".format(
                         pdbs=str(pdb_files),
                         mtzs=str(mtz_files),
                     )
@@ -142,7 +153,7 @@ class DefaultInputDirectoryParser(object):
 
             if len(new_files) == 0:
                 raise ValueError(
-                    "After filtering with only_datasets, no files are remaining.\n" + \
+                    "After filtering with only_datasets, no wrappers are remaining.\n" + \
                     "Selected dataset labels: {}\n".format(list(self.only_datasets)) + \
                     "Removed dataset labels: {}\n".format(list(remove_tags))
                 )
@@ -164,7 +175,7 @@ class DefaultInputDirectoryParser(object):
 
             if len(new_files) == 0:
                 raise ValueError(
-                    "After filtering with ignore_datasets, no files are remaining.\n" + \
+                    "After filtering with ignore_datasets, no wrappers are remaining.\n" + \
                     "Selected dataset labels: {}\n".format(list(self.ignore_datasets)) + \
                     "Removed dataset labels: {}\n".format(list(remove_tags))
                 )
@@ -240,7 +251,7 @@ class DefaultInputDirectoryParser(object):
 
         pdb_tag = mtz_tag = dir_tag = None
 
-        if ('*' in self.pdb_style):
+        if '*' in self.pdb_style:
             pdb_tag = self.extract_regex(
                 string=os.path.basename(pdb_path),
                 regex=(
@@ -250,7 +261,7 @@ class DefaultInputDirectoryParser(object):
                 ),
             )
 
-        if ('*' in self.mtz_style):
+        if '*' in self.mtz_style:
             mtz_tag = self.extract_regex(
                 string=os.path.basename(mtz_path),
                 regex=(
@@ -260,7 +271,7 @@ class DefaultInputDirectoryParser(object):
                 ),
             )
 
-        if ('*' in self.data_dirs):
+        if '*' in self.data_dirs:
             dir_tag = self.extract_regex(
                 string=os.path.dirname(pdb_path),
                 regex=(
@@ -286,10 +297,10 @@ class DefaultInputDirectoryParser(object):
 
         return tag
 
-    def extract_regex(self, string: str, regex: str):
+    def extract_regex(self, string, regex):
 
         import re
-        string = string.replace("\\", "/") # convert windows paths to unix paths
+
         matches = re.findall(regex, string)
 
         if len(matches) == 0:
@@ -383,17 +394,17 @@ class DefaultInputDirectoryParser(object):
             tag = dir_tag
             tag_used = "directory (from * in data_dirs)"
 
-        elif (pdb_tag is not None):
+        elif pdb_tag is not None:
 
             tag = pdb_tag
             tag_used = "pdb file (from * in pdb_style)"
 
-        elif (mtz_tag is not None):
+        elif mtz_tag is not None:
 
             tag = mtz_tag
             tag_used = "mtz file (from * in mtz_style)"
 
-        if (differences is True):
+        if differences is True:
             logger.warning(
                 "Different tags were identified -- using {used} labelling: {tag}".format(
                     used=tag_used, tag=tag,

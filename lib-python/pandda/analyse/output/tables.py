@@ -1,14 +1,13 @@
-import giant.logs as lg
-logger = lg.getLogger(__name__)
-
-import copy, collections
-
-import pandas as pd
+import collections
+import copy
 import pathlib as pl
 
-from pandda.utils import (
-    show_dict,
-    )
+import pandas as pd
+
+import giant.logs as lg
+from pandda.utils import show_dict
+
+logger = lg.getLogger(__name__)
 
 
 class MakePanddaDatasetTable(object):
@@ -24,14 +23,14 @@ class MakePanddaDatasetTable(object):
         "r_work",
         "space_group",
         "unit_cell",
-        ]
+    ]
 
     def __init__(self, output_path=None):
         self.output_path = output_path
 
     def __call__(self, dataset_dicts, output_path=None):
 
-        if (output_path is None):
+        if output_path is None:
             output_path = self.output_path
 
         if not pl.Path(output_path).parent.exists():
@@ -40,35 +39,31 @@ class MakePanddaDatasetTable(object):
         dataset_dicts = self.get_columns(dataset_dicts)
 
         df = pd.DataFrame.from_dict(
-            data = dataset_dicts,
-            )
+            data=dataset_dicts,
+        )
 
-        df.index.name = 'dtag'
+        df.index.name = "dtag"
 
         df = df.sort_values(
-            by = 'dtag',
-            ascending = True,
-            )
+            by="dtag",
+            ascending=True,
+        )
 
-        if (output_path is not None):
+        if output_path is not None:
             df.to_csv(
-                path_or_buf = str(output_path),
-                )
+                path_or_buf=str(output_path),
+            )
 
         return df
 
     def get_columns(self, dataset_dicts):
 
-        dataset_dicts = collections.OrderedDict([
-            (
-                col, 
-                dataset_dicts.get(col, {})
-                )
-            for col in self.columns
-            ])
+        dataset_dicts = collections.OrderedDict(
+            [(col, dataset_dicts.get(col, {})) for col in self.columns]
+        )
 
         return dataset_dicts
-        
+
 
 class MakePanddaEventTable(object):
 
@@ -90,38 +85,38 @@ class MakePanddaEventTable(object):
         "local_correlation",
         "r_work",
         "r_free",
-        ]
+    ]
 
     def __init__(self, output_path=None):
         self.output_path = output_path
 
     def __call__(self, event_dicts, output_path=None):
 
-        if (output_path is None): 
+        if output_path is None:
             output_path = self.output_path
 
         event_dicts = self.populate_dicts_maybe(
-            event_dicts = event_dicts,
-            )
+            event_dicts=event_dicts,
+        )
 
         df = pd.DataFrame(
-            data = event_dicts,
-            columns = self.columns,
-            )
+            data=event_dicts,
+            columns=self.columns,
+        )
 
-        df['interesting'] = False
+        df["interesting"] = False
 
         df = df.set_index(["dtag", "event_num"])
 
         # df = df.sort_values(
-        #     by = ['site_idx','z_peak'], 
+        #     by = ['site_idx','z_peak'],
         #     ascending = [1,0],
         #     )
 
-        if (output_path is not None): 
+        if output_path is not None:
             df.to_csv(
-                path_or_buf = str(output_path),
-                )
+                path_or_buf=str(output_path),
+            )
 
         return df
 
@@ -131,14 +126,14 @@ class MakePanddaEventTable(object):
 
         for e in event_dicts:
 
-            xyz = e.get('xyz_centroid', (None, None, None))
+            xyz = e.get("xyz_centroid", (None, None, None))
 
-            if xyz is None: 
+            if xyz is None:
                 xyz = (None, None, None)
 
-            e.setdefault('x', xyz[0])
-            e.setdefault('y', xyz[1])
-            e.setdefault('z', xyz[2])
+            e.setdefault("x", xyz[0])
+            e.setdefault("y", xyz[1])
+            e.setdefault("z", xyz[2])
 
         return event_dicts
 
@@ -151,36 +146,36 @@ class MakePanddaSiteTable(object):
         "max_value",
         "xyz_centroid",
         "xyz_extent",
-        ]
+    ]
 
     def __init__(self, output_path=None):
         self.output_path = output_path
 
     def __call__(self, site_dicts, output_path=None):
 
-        if (output_path is None):
+        if output_path is None:
             output_path = self.output_path
 
         site_dicts = self.populate_dicts_maybe(
-            site_dicts = site_dicts,
-            )
+            site_dicts=site_dicts,
+        )
 
         df = pd.DataFrame(
-            data = site_dicts,
-            columns = self.columns,
-            )
+            data=site_dicts,
+            columns=self.columns,
+        )
 
         df = df.set_index("site_num")
 
         df = df.sort_values(
-            by = 'site_num',
-            ascending = True,
-            )
+            by="site_num",
+            ascending=True,
+        )
 
-        if (output_path is not None):
+        if output_path is not None:
             df.to_csv(
-                path_or_buf = str(output_path),
-                )
+                path_or_buf=str(output_path),
+            )
 
         return df
 
@@ -190,117 +185,114 @@ class MakePanddaSiteTable(object):
 
         for s in site_dicts:
 
-            xyz = s.get('xyz_centroid', (None, None, None))
+            xyz = s.get("xyz_centroid", (None, None, None))
 
-            if xyz is None: 
+            if xyz is None:
                 xyz = (None, None, None)
 
-            s.setdefault('x', xyz[0])
-            s.setdefault('y', xyz[1])
-            s.setdefault('z', xyz[2])
+            s.setdefault("x", xyz[0])
+            s.setdefault("y", xyz[1])
+            s.setdefault("z", xyz[2])
 
         return site_dicts
 
 
 class MakePanddaResultsTables(object):
 
-    def __init__(self,
+    def __init__(
+        self,
         output_directory,
-        make_dataset_table = None,
-        make_events_table = None,
-        make_sites_table = None,
-        ):
+        make_dataset_table=None,
+        make_events_table=None,
+        make_sites_table=None,
+    ):
 
         output_directory = pl.Path(output_directory)
 
-        if (make_dataset_table is None):
+        if make_dataset_table is None:
             make_dataset_table = MakePanddaDatasetTable(
-                output_path = str(
-                    output_directory / "pandda_analyse_datasets.csv"
-                    ),
-                )
+                output_path=str(output_directory / "pandda_analyse_datasets.csv"),
+            )
 
-        if (make_events_table is None):
+        if make_events_table is None:
             make_events_table = MakePanddaEventTable(
-                output_path = str(
-                    output_directory / "pandda_analyse_events.csv"
-                    ),
-                )
+                output_path=str(output_directory / "pandda_analyse_events.csv"),
+            )
 
-        if (make_sites_table is None):
+        if make_sites_table is None:
             make_sites_table = MakePanddaSiteTable(
-                output_path = str(
-                    output_directory / "pandda_analyse_sites.csv"
-                    ),
-                )
+                output_path=str(output_directory / "pandda_analyse_sites.csv"),
+            )
 
         self.make_dataset_table = make_dataset_table
         self.make_events_table = make_events_table
         self.make_sites_table = make_sites_table
 
-    def __call__(self,
+    def __call__(
+        self,
         dataset_dicts,
         event_dicts,
         site_dicts,
-        ):
+    ):
 
         ###
         # Create output dicts from events
         #
         all_event_dicts = self.populate_event_dicts(
-            dataset_dicts = dataset_dicts,
-            event_dicts = event_dicts,
-            )
+            dataset_dicts=dataset_dicts,
+            event_dicts=event_dicts,
+        )
         #
         ###
 
         ###
-        # Write output and return files
+        # Write output and return wrappers
         #
-        logger.subheading('Output Dataset Table')
+        logger.subheading("Output Dataset Table")
         logger(
             self.make_dataset_table(
-                dataset_dicts = dataset_dicts,
-                )
+                dataset_dicts=dataset_dicts,
             )
+        )
         #
-        logger.subheading('Output Events Table')
+        logger.subheading("Output Events Table")
         logger(
             self.make_events_table(
-                event_dicts = all_event_dicts,
-                )
+                event_dicts=all_event_dicts,
             )
+        )
         #
-        logger.subheading('Output Sites Table')
+        logger.subheading("Output Sites Table")
         logger(
             self.make_sites_table(
-                site_dicts = site_dicts,
-                )
+                site_dicts=site_dicts,
             )
+        )
         #
         ###
 
         output_files = {
-            'dataset_table' : self.make_dataset_table.output_path,
-            'events_table' : self.make_events_table.output_path,
-            'sites_table' : self.make_sites_table.output_path,
+            "dataset_table": self.make_dataset_table.output_path,
+            "events_table": self.make_events_table.output_path,
+            "sites_table": self.make_sites_table.output_path,
         }
 
         return output_files
 
-    def populate_event_dicts(self, 
+    def populate_event_dicts(
+        self,
         dataset_dicts,
         event_dicts,
-        ):
+    ):
 
         all_event_dicts = []
-        
+
         for d_event in event_dicts:
 
             d = collections.OrderedDict(d_event)
 
-            dtag = d['dtag']
-            for key, value_dict in dataset_dicts.items(): 
+            dtag = d["dtag"]
+            for key, value_dict in dataset_dicts.items():
                 d[key] = value_dict.get(dtag)
 
             all_event_dicts.append(d)

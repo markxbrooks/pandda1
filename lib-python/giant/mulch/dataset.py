@@ -1,6 +1,8 @@
-import os, copy
+import copy
+import os
 
-import iotbx.pdb, iotbx.mtz
+import iotbx.mtz
+import iotbx.pdb
 
 from giant.exceptions import Sorry
 
@@ -83,7 +85,8 @@ class AtomicModel(_DatasetObj):
         ):
         """Align this model to another"""
 
-        from giant.structure.align import align_structures_rigid, align_structures_flexible
+        from giant.structure.align import (align_structures_flexible,
+                                           align_structures_rigid)
 
         assert isinstance(other_hierarchy, iotbx.pdb.hierarchy.root)
 
@@ -159,7 +162,8 @@ class CrystallographicModel(AtomicModel):
             distance_cutoff = distance_cutoff,
         )
 
-        from giant.xray.symmetry import apply_symmetry_operators, combine_hierarchies
+        from giant.xray.symmetry import (apply_symmetry_operators,
+                                         combine_hierarchies)
 
         sym_hierarchies, chain_mappings = apply_symmetry_operators(
             hierarchy = self.hierarchy,
@@ -353,3 +357,4 @@ class CrystallographicDataset(ModelAndData):
 
 
 #class MapData:
+

@@ -2,34 +2,32 @@ import json
 import multiprocessing
 import pathlib as pl
 
-from giant.processors import (
-    Processor,
-    ProcessorJoblib,
-    )
+from giant.processors import Processor, ProcessorJoblib
 
 system_cpus = multiprocessing.cpu_count()
 
 
 class UpdateConfiguration(object):
 
-    def __init__(self,
+    def __init__(
+        self,
         backend,
-        ):
+    ):
 
         self.backend = backend
 
     def __call__(self, configuration):
 
-        configuration.data['backend'] = self.backend
+        configuration.data["backend"] = self.backend
 
-        configuration.refresh() # check it works
+        configuration.refresh()  # check it works
 
-        configuration.write() # then write
+        configuration.write()  # then write
 
         return configuration
 
 
-class MassRefineConfiguration(object): 
+class MassRefineConfiguration(object):
 
     def __init__(self, json_path):
 
@@ -42,24 +40,20 @@ class MassRefineConfiguration(object):
     def read(self):
 
         if not self.json_path.exists():
-            
+
             return {}
 
-        with open(str(self.json_path), 'r') as fh:
+        with open(str(self.json_path), "r") as fh:
 
-            data = json.loads(
-                fh.read()
-                )
+            data = json.loads(fh.read())
 
         return data
 
     def write(self):
 
-        with open(str(self.json_path), 'w') as fh:
+        with open(str(self.json_path), "w") as fh:
 
-            fh.write(
-                json.dumps(self.data)
-                )
+            fh.write(json.dumps(self.data))
 
     def refresh(self):
 
@@ -69,14 +63,13 @@ class MassRefineConfiguration(object):
 
         d = self.data
 
-        if d.get('backend') == "parallel_joblib":
+        if d.get("backend") == "parallel_joblib":
             proc = ProcessorJoblib(
-                n_cpus = d.get("n_cpus", system_cpus),
-                )
-        elif d.get('backend') == "serial": 
+                n_cpus=d.get("n_cpus", system_cpus),
+            )
+        elif d.get("backend") == "serial":
             proc = Processor()
         else:
             proc = Processor()
 
         return proc
-

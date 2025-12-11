@@ -1,16 +1,11 @@
-import giant.logs as lg
-logger = lg.getLogger(__name__)
-
 import numpy as np
 
-from .base import (
-    RestraintsCollection,
-    DistanceRestraint,
-    )
+import giant.logs as lg
+from giant.structure.formatting import Labeller
 
-from giant.structure.formatting import (
-    Labeller,
-    )
+from .base import DistanceRestraint, RestraintsCollection
+
+logger = lg.getLogger(__name__)
 
 
 class _BaseRestraintMaker(object):
@@ -19,6 +14,7 @@ class _BaseRestraintMaker(object):
 
         if self.exclude_hydrogens is True:
             from giant.structure.select import non_h
+
             hierarchy = non_h(hierarchy)
 
         if self.atom_selection is not None:
@@ -30,24 +26,24 @@ class _BaseRestraintMaker(object):
 
 
 class MakeIntraConformerRestraints(_BaseRestraintMaker):
-
     name = "MakeIntraConformerRestraints"
 
-    _backbone_atom_set = set(['CA','C','N','O'])
-    _single_bond_elems = ['C','N','O','S','H','BR','CL','F'] # upper case
-    _multi_bond_resnames = ['HOH']
+    _backbone_atom_set = set(["CA", "C", "N", "O"])
+    _single_bond_elems = ["C", "N", "O", "S", "H", "BR", "CL", "F"]  # upper case
+    _multi_bond_resnames = ["HOH"]
 
-    def __init__(self,
-        min_distance_cutoff = 0.1,
-        max_distance_cutoff = 4.0,
-        distance_restraint_sigma = 0.1,
-        #torsion_restraint_sigma = None, TODO
-        select_altlocs = None,
-        atom_selection = None,
-        exclude_hydrogens = True,
-        filter_c_x_pairs = True,
-        filter_c_c_pairs = True,
-        ):
+    def __init__(
+        self,
+        min_distance_cutoff=0.1,
+        max_distance_cutoff=4.0,
+        distance_restraint_sigma=0.1,
+        # torsion_restraint_sigma = None, TODO
+        select_altlocs=None,
+        atom_selection=None,
+        exclude_hydrogens=True,
+        filter_c_x_pairs=True,
+        filter_c_c_pairs=True,
+    ):
 
         self.min_distance_cutoff = float(min_distance_cutoff)
         self.max_distance_cutoff = float(max_distance_cutoff)
@@ -55,16 +51,12 @@ class MakeIntraConformerRestraints(_BaseRestraintMaker):
         self.distance_restraint_sigma = float(distance_restraint_sigma)
 
         self.select_altlocs = (
-            list(select_altlocs)
-            if select_altlocs is not None
-            else None
-            )
+            list(select_altlocs) if select_altlocs is not None else None
+        )
 
         self.atom_selection = (
-            str(atom_selection)
-            if atom_selection is not None
-            else None
-            )
+            str(atom_selection) if atom_selection is not None else None
+        )
 
         self.exclude_hydrogens = bool(exclude_hydrogens)
 
@@ -74,71 +66,68 @@ class MakeIntraConformerRestraints(_BaseRestraintMaker):
         assert self.min_distance_cutoff > 0.0
         assert self.max_distance_cutoff > self.min_distance_cutoff
 
-        self.min_distance_cutoff_sq = (min_distance_cutoff ** 2)
-        self.max_distance_cutoff_sq = (max_distance_cutoff ** 2)
+        self.min_distance_cutoff_sq = min_distance_cutoff**2
+        self.max_distance_cutoff_sq = max_distance_cutoff**2
 
     def __str__(self):
 
         s_ = (
-            'Task: {name}\n'
-            '| min_distance_cutoff: {min_distance_cutoff}\n'
-            '| max_distance_cutoff: {max_distance_cutoff}\n'
-            '| distance_restraint_sigma: {distance_restraint_sigma}\n'
-            '| select_altlocs: {select_altlocs}\n'
-            '| atom_selection: {atom_selection}\n'
-            '| exclude_hydrogens: {exclude_hydrogens}\n'
-            '`---->'
-            ).format(
-                name = self.name,
-                min_distance_cutoff = self.min_distance_cutoff,
-                max_distance_cutoff = self.max_distance_cutoff,
-                distance_restraint_sigma = self.distance_restraint_sigma,
-                select_altlocs = str(self.select_altlocs),
-                atom_selection = str(self.atom_selection),
-                exclude_hydrogens = str(self.exclude_hydrogens),
-                )
+            "Task: {name}\n"
+            "| min_distance_cutoff: {min_distance_cutoff}\n"
+            "| max_distance_cutoff: {max_distance_cutoff}\n"
+            "| distance_restraint_sigma: {distance_restraint_sigma}\n"
+            "| select_altlocs: {select_altlocs}\n"
+            "| atom_selection: {atom_selection}\n"
+            "| exclude_hydrogens: {exclude_hydrogens}\n"
+            "`---->"
+        ).format(
+            name=self.name,
+            min_distance_cutoff=self.min_distance_cutoff,
+            max_distance_cutoff=self.max_distance_cutoff,
+            distance_restraint_sigma=self.distance_restraint_sigma,
+            select_altlocs=str(self.select_altlocs),
+            atom_selection=str(self.atom_selection),
+            exclude_hydrogens=str(self.exclude_hydrogens),
+        )
 
         return s_.strip()
 
     def __call__(self, hierarchy):
 
         hierarchy = self.get_selected_atoms(
-            hierarchy = hierarchy,
-            )
+            hierarchy=hierarchy,
+        )
 
         rc = RestraintsCollection()
 
-        for (altloc, conformer_h, other_h) in self.iterate_conformer_sets(hierarchy):
-
+        for altloc, conformer_h, other_h in self.iterate_conformer_sets(hierarchy):
             logger.debug(
                 (
-                    '** Generating restraints for altloc {altloc} **\n'
-                    '\tAlt. conf. atoms: {n_conf}\n'
-                    '\tMain+Alt conf atoms: {n_main}\n'
-                    ).format(
-                    altloc = altloc,
-                    n_conf = conformer_h.atoms().size(),
-                    n_main = other_h.atoms().size(),
-                    )
+                    "** Generating restraints for altloc {altloc} **\n"
+                    "\tAlt. conf. atoms: {n_conf}\n"
+                    "\tMain+Alt conf atoms: {n_main}\n"
+                ).format(
+                    altloc=altloc,
+                    n_conf=conformer_h.atoms().size(),
+                    n_main=other_h.atoms().size(),
                 )
+            )
 
             atom_pairs = self.iterate_atom_pairs_within_cutoff(
-                conformer_hierarchy = conformer_h,
-                other_hierarchy = other_h,
-                )
+                conformer_hierarchy=conformer_h,
+                other_hierarchy=other_h,
+            )
 
             atom_pairs = self.prune_atom_pairs(
-                atom_pairs = atom_pairs,
-                )
+                atom_pairs=atom_pairs,
+            )
 
             restraints = self.make_atom_pair_restraints(
-                atom_pairs = atom_pairs,
-                label = 'Restraints for altloc {alt}'.format(alt=altloc),
-                )
+                atom_pairs=atom_pairs,
+                label="Restraints for altloc {alt}".format(alt=altloc),
+            )
 
-            logger.debug(
-                str(restraints)
-                )
+            logger.debug(str(restraints))
 
             rc.add(restraints)
 
@@ -154,85 +143,72 @@ class MakeIntraConformerRestraints(_BaseRestraintMaker):
 
         # Subselect altlocs?
         sel_altlocs = (
-            self.select_altlocs
-            if self.select_altlocs is not None
-            else all_altlocs
-            )
+            self.select_altlocs if self.select_altlocs is not None else all_altlocs
+        )
 
         # Get blank altloc atom selection
-        alt_blank_sel = (
-            alt_indices == all_altlocs.index('')
-            ) # flex.bool
+        alt_blank_sel = alt_indices == all_altlocs.index("")  # flex.bool
 
         for i_alt, alt in enumerate(all_altlocs):
 
-            if alt.strip() == '':
+            if alt.strip() == "":
                 continue
 
             # Skip skipped altlocs
-            if (alt not in sel_altlocs):
+            if alt not in sel_altlocs:
                 continue
 
             # Make selection for the altloc atoms
-            alt_sel = (alt_indices == i_alt) # flex.bool
+            alt_sel = alt_indices == i_alt  # flex.bool
 
             # Make selection for altloc atoms and main conf atoms
             # (doing it this way keeps atom ordering -- desirable but inefficient?)
-            combined_sel = (alt_indices == i_alt).set_selected(alt_blank_sel, True) # flex.bool
+            combined_sel = (alt_indices == i_alt).set_selected(
+                alt_blank_sel, True
+            )  # flex.bool
 
             yield (
                 alt,
                 hierarchy.select(alt_sel),
                 hierarchy.select(combined_sel),
-                )
+            )
 
     def iterate_atom_pairs_within_cutoff(self, conformer_hierarchy, other_hierarchy):
 
-        conformer_xyz = np.array(
-            conformer_hierarchy.atoms().extract_xyz()
-            )
-        other_xyz = np.array(
-            other_hierarchy.atoms().extract_xyz()
-            )
+        conformer_xyz = np.array(conformer_hierarchy.atoms().extract_xyz())
+        other_xyz = np.array(other_hierarchy.atoms().extract_xyz())
 
         pairwise_distances_sq = np.zeros(
             (len(conformer_xyz), len(other_xyz)),
-            dtype = float,
-            )
+            dtype=float,
+        )
 
         for i_conformer, conf_xyz in enumerate(conformer_xyz):
-
             # calculate inter-atom distances -- only for i > j
-            pairwise_distances_sq[i_conformer] = (
-                np.power(other_xyz - conf_xyz, 2).sum(axis=1)
-                )
+            pairwise_distances_sq[i_conformer] = np.power(other_xyz - conf_xyz, 2).sum(
+                axis=1
+            )
 
         # Truncate large distances
         pairwise_distances_sq[pairwise_distances_sq > self.max_distance_cutoff_sq] = -1
 
         # Select distances above cutoff
         atom_pair_indices = np.array(
-            np.where(
-                pairwise_distances_sq >= self.min_distance_cutoff_sq
-                )
-            ).T
+            np.where(pairwise_distances_sq >= self.min_distance_cutoff_sq)
+        ).T
 
         # Sort the atom_pair_indices by the distance
         # so that the shortest distances are prioritised
         sorted_atom_pair_indices = sorted(
             atom_pair_indices.tolist(),
-            key = lambda i_j: pairwise_distances_sq[i_j[0],i_j[1]],
-            )
+            key=lambda i_j: pairwise_distances_sq[i_j[0], i_j[1]],
+        )
 
         atom_check_hash = {}
 
         # This is annoying -- could probably be optimised further
-        conformer_atoms_with_labels = list(
-            conformer_hierarchy.atoms_with_labels()
-            )
-        other_atoms_with_labels = list(
-            other_hierarchy.atoms_with_labels()
-            )
+        conformer_atoms_with_labels = list(conformer_hierarchy.atoms_with_labels())
+        other_atoms_with_labels = list(other_hierarchy.atoms_with_labels())
 
         for i_at_conf, i_at_other in sorted_atom_pair_indices:
 
@@ -242,25 +218,24 @@ class MakeIntraConformerRestraints(_BaseRestraintMaker):
             # sort atoms by serial (unique)
             a1, a2 = sorted(
                 [a1, a2],
-                key = lambda a: a.serial_as_int(),
-                )
+                key=lambda a: a.serial_as_int(),
+            )
 
             hash_lab = (
                 a1.serial_as_int(),
                 a2.serial_as_int(),
-                )
+            )
 
             logger.debug(
-                    'Atom pair: \n\t{l1}\n\t{l2}'.format(
-                        l1 = Labeller.format(a1),
-                        l2 = Labeller.format(a2),
-                        )
-                    )
+                "Atom pair: \n\t{l1}\n\t{l2}".format(
+                    l1=Labeller.format(a1),
+                    l2=Labeller.format(a2),
+                )
+            )
 
             # avoid exact duplicates
             if atom_check_hash.get(hash_lab):
-
-                logger.debug('Already done, skipping.\n')
+                logger.debug("Already done, skipping.\n")
 
                 continue
 
@@ -268,51 +243,50 @@ class MakeIntraConformerRestraints(_BaseRestraintMaker):
             atom_check_hash[hash_lab] = 1
 
             # Check not in the same residue, etc
-            if not self.is_valid_atom_pair(a1,a2):
-
-                logger.debug('Not valid atom pair, skipping.\n')
+            if not self.is_valid_atom_pair(a1, a2):
+                logger.debug("Not valid atom pair, skipping.\n")
 
                 continue
 
-            logger.debug('Keeping atom pair.\n')
+            logger.debug("Keeping atom pair.\n")
 
             yield (a1, a2)
 
     def is_valid_atom_pair(self, atom1, atom2):
 
         if atom1.chain_id != atom2.chain_id:
-            logger.debug('USE: Different chains')
+            logger.debug("USE: Different chains")
             return True
 
         # do not allow same residue
         if atom1.resid() == atom2.resid():
-            logger.debug('SKIP: Same atom group')
+            logger.debug("SKIP: Same atom group")
             return False
 
         # now quick checks
 
         if atom1.hetero or atom2.hetero:
-            logger.debug('USE: At least one atom is HETATM')
+            logger.debug("USE: At least one atom is HETATM")
             return True
 
         if self.filter_c_c_pairs is True:
-            if (atom1.element.strip().upper() == 'C') and (atom2.element.strip().upper() == 'C'):
-                logger.debug('SKIP: Skipping C-C pairs')
+            if (atom1.element.strip().upper() == "C") and (
+                atom2.element.strip().upper() == "C"
+            ):
+                logger.debug("SKIP: Skipping C-C pairs")
                 return False
 
         # only allow interactions between adjacent sidechains
 
-        if abs(
-            atom1.resseq_as_int() - atom2.resseq_as_int()
-            ) < 2:
+        if abs(atom1.resseq_as_int() - atom2.resseq_as_int()) < 2:
 
             if self._backbone_atom_set.intersection(
                 [
                     atom1.name.strip(),
                     atom2.name.strip(),
-                    ]
-                ):
-                logger.debug('SKIP: Main chains of adjacent residues')
+                ]
+            ):
+                logger.debug("SKIP: Main chains of adjacent residues")
                 return False
 
         return True
@@ -323,58 +297,49 @@ class MakeIntraConformerRestraints(_BaseRestraintMaker):
         sorting_hash = {}
 
         for a1, a2 in atom_pairs:
-
             assert a1.serial_as_int() < a2.serial_as_int(), "must be preordered"
 
             # Sort by residue interactions
             hash_key = (
-                a1.chain_id+a1.resid(),
-                a2.chain_id+a2.resid(),
-                )
+                a1.chain_id + a1.resid(),
+                a2.chain_id + a2.resid(),
+            )
 
             hash_tuple = (
                 a1,
                 a2,
                 a1.distance(a2),
-                )
+            )
 
-            sorting_hash.setdefault(
-                hash_key, []
-                ).append(
-                hash_tuple
-                )
+            sorting_hash.setdefault(hash_key, []).append(hash_tuple)
 
         # Now return one one interaction for each atom for each residue pairing
 
         for k, atom_pairs in sorted(sorting_hash.items()):
 
-            logger.debug(
-                'Pruning atom pairs between "{}" and "{}"'.format(
-                    *k
-                    )
-                )
+            logger.debug('Pruning atom pairs between "{}" and "{}"'.format(*k))
 
             sorted_atom_pairs = sorted(
                 atom_pairs,
-                key = lambda t: t[2],
-                )
+                key=lambda t: t[2],
+            )
 
             logger.debug(
-                'Current atom pairs (sorted by distance):\n{}'.format(
-                    '\n'.join([
-                        (
-                        '\tAtom1: {a1}\n'
-                        '\tAtom2: {a2}\n'
-                        '\tDistance: {d}'
-                        ).format(
-                        a1 = Labeller.format(ap[0]),
-                        a2 = Labeller.format(ap[1]),
-                        d = ap[2],
-                        )
-                        for ap in atom_pairs
-                        ])
+                "Current atom pairs (sorted by distance):\n{}".format(
+                    "\n".join(
+                        [
+                            (
+                                "\tAtom1: {a1}\n" "\tAtom2: {a2}\n" "\tDistance: {d}"
+                            ).format(
+                                a1=Labeller.format(ap[0]),
+                                a2=Labeller.format(ap[1]),
+                                d=ap[2],
+                            )
+                            for ap in atom_pairs
+                        ]
                     )
                 )
+            )
 
             #
 
@@ -401,26 +366,28 @@ class MakeIntraConformerRestraints(_BaseRestraintMaker):
                         # Could be longer-range interactions that are required to keep geometry for heavier atoms
 
                         logger.debug(
-                            'Ignoring atom pair:\n\t{a1}\n\t{a2}\n\t{m}'.format(
-                                a1 = Labeller.format(a1),
-                                a2 = Labeller.format(a2),
-                                m = '(Atom {} is marked as already used.)'.format(a_id),
-                                )
+                            "Ignoring atom pair:\n\t{a1}\n\t{a2}\n\t{m}".format(
+                                a1=Labeller.format(a1),
+                                a2=Labeller.format(a2),
+                                m="(Atom {} is marked as already used.)".format(a_id),
                             )
+                        )
 
                         use_this_pair = False
                     #
                     # Previously seen, check we want to use it to be used again
                     # (even if it's not used in this pair).
                     #
-                    elif (use_this_atom is None):
+                    elif use_this_atom is None:
                         #
                         # some atoms e.g. water can have as many bonds as it likes to the same residue
                         # or at least until it starts to link to carbon atoms, then mark as done
                         # stops too many restraints between carbon atoms and e.g. waters
                         #
-                        if 'C' in [a1.element.strip().upper(), a2.element.strip().upper()]:
-
+                        if "C" in [
+                            a1.element.strip().upper(),
+                            a2.element.strip().upper(),
+                        ]:
                             # Flag this atom not to be used again
                             use_this_atom_hash[a_id] = False
 
@@ -428,25 +395,27 @@ class MakeIntraConformerRestraints(_BaseRestraintMaker):
                             use_this_pair = False
 
                             logger.debug(
-                                'Ignoring atom pair:\n\t{a1}\n\t{a2}\n\t{m}'.format(
-                                    a1 = Labeller.format(a1),
-                                    a2 = Labeller.format(a2),
-                                    m = '(Not making multiple restraints including C-X interactions.)'.format(a_id),
-                                    )
+                                "Ignoring atom pair:\n\t{a1}\n\t{a2}\n\t{m}".format(
+                                    a1=Labeller.format(a1),
+                                    a2=Labeller.format(a2),
+                                    m="(Not making multiple restraints including C-X interactions.)".format(
+                                        a_id
+                                    ),
                                 )
+                            )
 
-                if (use_this_pair is False):
+                if use_this_pair is False:
                     continue
 
                 #
 
                 logger.debug(
-                    'Keeping atom pair:\n\t{a1}\n\t{a2}\n\t{m}'.format(
-                        a1 = Labeller.format(a1),
-                        a2 = Labeller.format(a2),
-                        m = 'Distance = {}'.format(a1.distance(a2)),
-                        )
+                    "Keeping atom pair:\n\t{a1}\n\t{a2}\n\t{m}".format(
+                        a1=Labeller.format(a1),
+                        a2=Labeller.format(a2),
+                        m="Distance = {}".format(a1.distance(a2)),
                     )
+                )
 
                 # Mark each atom are now used
 
@@ -465,92 +434,89 @@ class MakeIntraConformerRestraints(_BaseRestraintMaker):
                 yield (a1, a2)
 
             # makes log easier to read
-            logger.debug('')
+            logger.debug("")
 
     def make_atom_pair_restraints(self, atom_pairs, label=None):
 
         distance_restraints = []
 
         for a1, a2 in list(atom_pairs):
-
             distance_restraints.append(
                 DistanceRestraint(
-                    atom1 = a1,
-                    atom2 = a2,
-                    length = a1.distance(a2),
-                    sigma = self.distance_restraint_sigma,
-                    )
+                    atom1=a1,
+                    atom2=a2,
+                    length=a1.distance(a2),
+                    sigma=self.distance_restraint_sigma,
                 )
+            )
 
         return RestraintsCollection(
-            label = label,
-            distance_restraints = distance_restraints,
-            )
+            label=label,
+            distance_restraints=distance_restraints,
+        )
 
 
 class MakeDuplicateConformerRestraints(_BaseRestraintMaker):
-
     name = "MakeDuplicateConformerRestraints"
 
-    def __init__(self,
-        rmsd_cutoff = 0.1,
-        distance_restraint_sigma = 0.02,
-        atom_selection = None,
-        exclude_hydrogens = True,
-        ):
+    def __init__(
+        self,
+        rmsd_cutoff=0.1,
+        distance_restraint_sigma=0.02,
+        atom_selection=None,
+        exclude_hydrogens=True,
+    ):
 
         self.rmsd_cutoff = float(rmsd_cutoff)
         self.distance_restraint_sigma = float(distance_restraint_sigma)
 
         self.atom_selection = (
-            str(atom_selection)
-            if atom_selection is not None
-            else None
-            )
+            str(atom_selection) if atom_selection is not None else None
+        )
 
         self.exclude_hydrogens = bool(exclude_hydrogens)
-
 
     def __str__(self):
 
         s_ = (
-            'Task: {name}\n'
-            '| rmsd_cutoff: {rmsd_cutoff}\n'
-            '| distance_restraint_sigma: {distance_restraint_sigma}\n'
-            '| atom_selection: {atom_selection}\n'
-            '| exclude_hydrogens: {exclude_hydrogens}\n'
-            '`---->'
-            ).format(
-                name = self.name,
-                rmsd_cutoff = self.rmsd_cutoff,
-                distance_restraint_sigma = self.distance_restraint_sigma,
-                atom_selection = str(self.atom_selection),
-                exclude_hydrogens = str(self.exclude_hydrogens),
-                )
+            "Task: {name}\n"
+            "| rmsd_cutoff: {rmsd_cutoff}\n"
+            "| distance_restraint_sigma: {distance_restraint_sigma}\n"
+            "| atom_selection: {atom_selection}\n"
+            "| exclude_hydrogens: {exclude_hydrogens}\n"
+            "`---->"
+        ).format(
+            name=self.name,
+            rmsd_cutoff=self.rmsd_cutoff,
+            distance_restraint_sigma=self.distance_restraint_sigma,
+            atom_selection=str(self.atom_selection),
+            exclude_hydrogens=str(self.exclude_hydrogens),
+        )
 
         return s_.strip()
 
-    def __call__(self,
+    def __call__(
+        self,
         hierarchy,
-        ):
+    ):
 
         hierarchy = self.get_selected_atoms(
-            hierarchy = hierarchy,
-            )
+            hierarchy=hierarchy,
+        )
 
         rc = RestraintsCollection()
 
         altconf_dict = self.get_altconf_dict(
-            hierarchy = hierarchy,
-            )
+            hierarchy=hierarchy,
+        )
 
         duplicate_residues = self.get_duplicate_residues(
-            altconf_dict = altconf_dict,
-            )
+            altconf_dict=altconf_dict,
+        )
 
         restraints = self.make_atom_restraints(
-            residue_pairs = duplicate_residues,
-            )
+            residue_pairs=duplicate_residues,
+        )
 
         rc.add(restraints)
 
@@ -558,29 +524,43 @@ class MakeDuplicateConformerRestraints(_BaseRestraintMaker):
 
     def get_altconf_dict(self, hierarchy):
 
-        blank_idx = list(hierarchy.altloc_indices()).index('')
+        blank_idx = list(hierarchy.altloc_indices()).index("")
 
-        not_blank_sel = (hierarchy.get_conformer_indices() != blank_idx)
-
-        sel_hierarchy = hierarchy.select(not_blank_sel)
+        # Get conformer indices and create selection
+        conformer_indices = hierarchy.get_conformer_indices()
+        not_blank_sel = conformer_indices != blank_idx
+        
+        # Convert flex.bool to indices for selection (more reliable)
+        from scitbx.array_family import flex
+        import numpy as np
+        not_blank_array = np.array(not_blank_sel)
+        if not_blank_array.ndim == 0:
+            # Handle 0d array case
+            not_blank_indices = flex.size_t([0]) if not_blank_array else flex.size_t([])
+        else:
+            # Convert numpy int64 to Python int for flex.size_t
+            not_blank_indices = flex.size_t([int(i) for i in np.where(not_blank_array)[0]])
+        
+        sel_hierarchy = hierarchy.select(not_blank_indices)
 
         rg_dict = {}
 
         for rg in sel_hierarchy.residue_groups():
-
             # Need a unique label
             label = rg.id_str()
 
             assert label not in rg_dict
 
             rg_dict[label] = {
-                cf.altloc : (
+                cf.altloc: (
                     cf.only_residue(),
-                    dict(zip(
-                        cf.only_residue().atoms().extract_name(),
-                        cf.only_residue().atoms().extract_xyz(),
-                        ))
-                    )
+                    dict(
+                        zip(
+                            cf.only_residue().atoms().extract_name(),
+                            cf.only_residue().atoms().extract_xyz(),
+                        )
+                    ),
+                )
                 for cf in rg.conformers()
             }
 
@@ -605,17 +585,15 @@ class MakeDuplicateConformerRestraints(_BaseRestraintMaker):
                         continue
 
                     rmsd = self.calculate_rmsd(
-                        xyz_dict_1 = xyz_dict1,
-                        xyz_dict_2 = xyz_dict2,
-                        )
+                        xyz_dict_1=xyz_dict1,
+                        xyz_dict_2=xyz_dict2,
+                    )
 
                     if rmsd is None:
                         continue
 
                     elif rmsd < self.rmsd_cutoff:
-                        duplicate_list.append(
-                            (residue1, residue2)
-                            )
+                        duplicate_list.append((residue1, residue2))
 
         return duplicate_list
 
@@ -628,22 +606,19 @@ class MakeDuplicateConformerRestraints(_BaseRestraintMaker):
             ats1 = r1.atoms().build_dict()
             ats2 = r2.atoms().build_dict()
 
-            for k in sorted(
-                set(ats1.keys()).intersection(ats2.keys())
-                ):
-
+            for k in sorted(set(ats1.keys()).intersection(ats2.keys())):
                 distance_restraints.append(
                     DistanceRestraint(
-                        atom1 = ats1[k],
-                        atom2 = ats2[k],
-                        length = 0.,
-                        sigma = self.distance_restraint_sigma,
-                        )
+                        atom1=ats1[k],
+                        atom2=ats2[k],
+                        length=0.0,
+                        sigma=self.distance_restraint_sigma,
                     )
+                )
 
         return RestraintsCollection(
-            distance_restraints = distance_restraints,
-            )
+            distance_restraints=distance_restraints,
+        )
 
     def calculate_rmsd(self, xyz_dict_1, xyz_dict_2):
 
@@ -658,5 +633,3 @@ class MakeDuplicateConformerRestraints(_BaseRestraintMaker):
         d = np.power(xyz_1 - xyz_2, 2).sum() ** 0.5
 
         return d
-
-

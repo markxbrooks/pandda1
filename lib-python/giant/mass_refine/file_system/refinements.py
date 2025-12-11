@@ -1,13 +1,11 @@
-import giant.logs as lg
-logger = lg.getLogger(__name__)
-
-import shutil
 import pathlib as pl
+import shutil
 
-from .base import (
-    FolderWithMeta,
-    DirectoryPathGenerator,
-    )
+import giant.logs as lg
+
+from .base import DirectoryPathGenerator, FolderWithMeta
+
+logger = lg.getLogger(__name__)
 
 
 class MakeRefinementFolder(object):
@@ -16,25 +14,24 @@ class MakeRefinementFolder(object):
 
         self.f = refinement_folder
 
-    def __call__(self,
+    def __call__(
+        self,
         meta_dict,
-        ):
+    ):
 
         assert (
             not self.f.root_dir.exists()
-            ), 'refinement_folder {} already exists'.format(
+        ), "refinement_folder {} already exists".format(
             str(self.f.root_dir),
-            )
+        )
 
         self.f.root_dir.mkdir()
 
-        self.write_meta(
-            meta_dict
-            )
+        self.write_meta(meta_dict)
 
     def write_meta(self, meta_dict):
 
-        if meta_dict is None: 
+        if meta_dict is None:
             meta_dict = {}
 
         self.f.write_meta(meta_dict)
@@ -49,82 +46,71 @@ class RefinementFolder(FolderWithMeta):
 
     name = "Refinement"
 
-    def __init__(self, 
+    def __init__(
+        self,
         root_dir,
-        input_data_folder = None,
-        input_model_folder = None,
-        ):
+        input_data_folder=None,
+        input_model_folder=None,
+    ):
 
         self.root_dir = pl.Path(root_dir)
 
-        self.model_path = (
-            self.root_dir / 'output.pdb'
-            )
+        self.model_path = self.root_dir / "output.pdb"
 
-        self.data_path = (
-            self.root_dir / 'output.mtz'
-            )
+        self.data_path = self.root_dir / "output.mtz"
 
-        self.input_data = (
-            input_data_folder
-            )
+        self.input_data = input_data_folder
 
-        self.input_model = (
-            input_model_folder
-            )
+        self.input_model = input_model_folder
 
-        self.meta_path = (
-            self.root_dir / 'meta.json'
-            )
+        self.meta_path = self.root_dir / "meta.json"
 
     def __str__(self):
 
         s_ = (
-            'Object Type: {name}\n'
-            '| Location: {path}\n'
-            '| Refined model: {output_model}\n'
-            '| Refined data: {output_data}\n'
-            '| Input model: \n'
-            '| \t{input_model}\n'
-            '| Input data: \n'
-            '| \t{input_data}\n'
-            '| Meta: \n'
-            '| \t{meta_string}\n'
-            '`---->'
-            ).format(
-            name = self.name,
-            path = self.root_dir,
-            input_model = str(
-                self.input_model_folder
-                ).replace('\n','\n| \t'),
-            input_data = str(
-                self.input_data_folder
-                ).replace('\n','\n| \t'),
-            output_model = self.output_model,
-            output_data = self.output_data,
-            meta_string = '\n'.join([
-                "{k:>10s} : {v}".format(
-                    k=k, v=v,
+            "Object Type: {name}\n"
+            "| Location: {path}\n"
+            "| Refined model: {output_model}\n"
+            "| Refined data: {output_data}\n"
+            "| Input model: \n"
+            "| \t{input_model}\n"
+            "| Input data: \n"
+            "| \t{input_data}\n"
+            "| Meta: \n"
+            "| \t{meta_string}\n"
+            "`---->"
+        ).format(
+            name=self.name,
+            path=self.root_dir,
+            input_model=str(self.input_model_folder).replace("\n", "\n| \t"),
+            input_data=str(self.input_data_folder).replace("\n", "\n| \t"),
+            output_model=self.output_model,
+            output_data=self.output_data,
+            meta_string="\n".join(
+                [
+                    "{k:>10s} : {v}".format(
+                        k=k,
+                        v=v,
                     )
-                for k, v in sorted(
-                    self.get_meta().items()
-                    )
-                ]).replace('\n','\n| \t'),
-            )
+                    for k, v in sorted(self.get_meta().items())
+                ]
+            ).replace("\n", "\n| \t"),
+        )
 
         return s_.strip()
 
-    def initialise(self,
+    def initialise(
+        self,
         meta_dict,
-        ):
+    ):
 
         make = MakeRefinementFolder(
-            refinement_folder = self,
-            )
+            refinement_folder=self,
+        )
 
         make(
-            meta_dict = meta_dict,
-            )
+            meta_dict=meta_dict,
+        )
 
         return self
 
@@ -143,52 +129,49 @@ class RefinementFolder(FolderWithMeta):
 
         if self.data_path.exists():
             return self.data_path
-        else: 
+        else:
             return None
 
 
-class RefinementsFileSystem(object): 
+class RefinementsFileSystem(object):
 
     name = "Refinements"
 
-    def __init__(self, 
-        root_dir, 
-        data_folder = None,
-        ):
+    def __init__(
+        self,
+        root_dir,
+        data_folder=None,
+    ):
 
         self.root_dir = pl.Path(root_dir)
 
         self.path_generator = RefinementFolderPathGenerator(
-            root_dir = self.root_dir,
-            )
+            root_dir=self.root_dir,
+        )
 
-        self.data_folder = (
-            data_folder
-            )
+        self.data_folder = data_folder
 
     def __str__(self):
 
         s_ = (
-            'Object Type: {name}\n'
-            '| Location: {path}\n'
-            '| Refinements: \n'
-            '| \t{refinements_string}\n'
-            '`---->'
-            ).format(
-            name = self.name,
-            path = self.root_dir,
-            refinements_string = '\n'.join([
-                str(v) for k,v in sorted(
-                    self.get_all_by_number().items()
-                    )
-                ]).replace('\n','\n| \t'),
-            )
+            "Object Type: {name}\n"
+            "| Location: {path}\n"
+            "| Refinements: \n"
+            "| \t{refinements_string}\n"
+            "`---->"
+        ).format(
+            name=self.name,
+            path=self.root_dir,
+            refinements_string="\n".join(
+                [str(v) for k, v in sorted(self.get_all_by_number().items())]
+            ).replace("\n", "\n| \t"),
+        )
 
         return s_.strip()
 
     def initialise(self):
 
-        assert not self.root_dir.exists(), 'already initialised'
+        assert not self.root_dir.exists(), "already initialised"
 
         self.root_dir.mkdir()
 
@@ -202,71 +185,68 @@ class RefinementsFileSystem(object):
 
         return self
 
-    def create_refinement_folder(self, 
+    def create_refinement_folder(
+        self,
         label,
-        model_folder = None,
-        meta_dict = None,
-        ):
+        model_folder=None,
+        meta_dict=None,
+    ):
 
         dir_path = self.path_generator.get_next(
-            suffix = label,
-            )
+            suffix=label,
+        )
 
         assert not dir_path.exists()
 
-        meta_dict = (
-            meta_dict if meta_dict is not None else dict()
-            )
-        
-        meta_dict.setdefault('label', label)
+        meta_dict = meta_dict if meta_dict is not None else dict()
+
+        meta_dict.setdefault("label", label)
 
         return RefinementFolder(
-            root_dir = dir_path,
-            input_data_folder = self.data_folder,
-            input_model_folder = model_folder,
-            ).initialise(
-            meta_dict = meta_dict,
-            )
+            root_dir=dir_path,
+            input_data_folder=self.data_folder,
+            input_model_folder=model_folder,
+        ).initialise(
+            meta_dict=meta_dict,
+        )
 
     def get(self, integer=None, label=None):
 
-        if integer is not None: 
+        if integer is not None:
 
             dir_path_dict = self.path_generator.get_all_as_dict_by_int()
             dir_path = dir_path_dict[integer]
 
-        elif label is not None: 
+        elif label is not None:
 
             dir_path_dict = self.path_generator.get_all_as_dict_by_name()
             dir_path = dir_path_dict[label]
 
-        else: 
+        else:
 
-            raise Exception('must provide integer or label')
+            raise Exception("must provide integer or label")
 
         return RefinementFolder(
-            root_dir = dir_path,
-            input_data_folder = self.data_folder,
-            )
+            root_dir=dir_path,
+            input_data_folder=self.data_folder,
+        )
 
     def get_all_by_number(self):
 
         return {
-            k : RefinementFolder(
-                root_dir = p,
-                input_data_folder = self.data_folder,
-                )
-            for k, p in 
-            self.path_generator.get_all_as_dict_by_int().items()
+            k: RefinementFolder(
+                root_dir=p,
+                input_data_folder=self.data_folder,
+            )
+            for k, p in self.path_generator.get_all_as_dict_by_int().items()
         }
 
     def get_all_by_label(self):
 
         return {
-            k : RefinementFolder(
-                root_dir = p,
-                input_data_folder = self.data_folder,
-                )
-            for k, p in 
-            self.path_generator.get_all_as_dict_by_name().items()
+            k: RefinementFolder(
+                root_dir=p,
+                input_data_folder=self.data_folder,
+            )
+            for k, p in self.path_generator.get_all_as_dict_by_name().items()
         }

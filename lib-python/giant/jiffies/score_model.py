@@ -1,48 +1,31 @@
-import giant.logs as lg
-logger = lg.getLogger(__name__)
-
-import os, sys, copy, itertools
-
-import numpy as np
+import copy
+import itertools
+import os
 import pathlib as pl
+import sys
 
-from giant.mulch.labelling import (
-    PathLabeller,
-    )
-
-from giant.exceptions import (
-    Sorry, Failure,
-    )
-
-from giant.processors import (
-    ProcessorJoblib,
-    )
-
-from giant.phil import (
-    log_running_parameters,
-    )
-
-from giant.plot import (
-    setup_plotting,
-    )
-
-from giant.mulch.dataset import (
-    CrystallographicDataset,
-    )
-
+import giant.logs as lg
+from giant.exceptions import Sorry
+from giant.mulch.dataset import CrystallographicDataset
+from giant.mulch.labelling import PathLabeller
+from giant.phil import log_running_parameters
+from giant.plot import setup_plotting
+from giant.processors import ProcessorJoblib
 from giant.validation.score_residues import (
-    ScoreModelSingle,
-    ScoreModelMultiple,
     GetInterestingResnames,
+    ScoreModelMultiple,
+    ScoreModelSingle,
+    ValidationRadarPlot,
     WriteScores,
-    ValidationRadarPlot
-    )
+)
+
+logger = lg.getLogger(__name__)
 
 setup_plotting()
 
 #################################
 
-PROGRAM = 'giant.score_model'
+PROGRAM = "giant.score_model"
 DESCRIPTION = """
     A tool to quickly score residues (e.g. ligands) against crystallographic electron density.
 
@@ -61,9 +44,9 @@ DESCRIPTION = """
     Multiple Structures:
 
     1) Simple usage:
-        Mtz files can be provided explicitly:
+        Mtz wrappers can be provided explicitly:
         > giant.score_model filename1.pdb filename1.mtz filename2.pdb filename2.mtz filename3.pdb filename3.mtz
-        or can be omitted when the same same as the pdb files (e.g. filename1.mtz, filename2.mtz, etc)
+        or can be omitted when the same same as the pdb wrappers (e.g. filename1.mtz, filename2.mtz, etc)
         > giant.score_model filename1.pdb filename2.pdb filename3.pdb
 
     See giant.score_model for more information.
@@ -72,13 +55,15 @@ DESCRIPTION = """
 #######################################
 
 blank_arg_prepend = {
-    '.pdb' : 'pdb=',
-    '.mtz' : 'mtz=',
-     None  : 'directory=',
+    ".pdb": "pdb=",
+    ".mtz": "mtz=",
+    None: "directory=",
 }
 
-import libtbx.phil
-master_phil = libtbx.phil.parse("""
+import libtbx.phil  # noqa: E402
+
+master_phil = libtbx.phil.parse(
+    """
 input {
     from_files {
         pdb = None
@@ -131,7 +116,7 @@ options {
         .type = str
         .multiple = True
     edstats_f_label = None
-        .help = 'Column label for experimental amplitudes in input mtz files. If left blank will try to guess the labels.'
+        .help = 'Column label for experimental amplitudes in input mtz wrappers. If left blank will try to guess the labels.'
         .type = str
         .multiple = False
 }
@@ -193,7 +178,7 @@ plot {
 }
 include scope giant.phil.settings_phil
 """,
-process_includes=True,
+    process_includes=True,
 )
 
 
@@ -214,23 +199,23 @@ class validate_params(object):
 
     def validate_structures(self, params):
 
-        if (params.input.from_files.pdb and params.input.from_directories.directory):
-            raise Sorry('Must provide input structures OR input directories')
+        if params.input.from_files.pdb and params.input.from_directories.directory:
+            raise Sorry("Must provide input structures OR input directories")
 
-        if (not params.input.from_files.pdb) and (not params.input.from_directories.directory):
-            raise Sorry('No input structures provided (provide structures OR input directories')
+        if (not params.input.from_files.pdb) and (
+            not params.input.from_directories.directory
+        ):
+            raise Sorry(
+                "No input structures provided (provide structures OR input directories"
+            )
 
-        if (params.input.from_files.pdb):
+        if params.input.from_files.pdb:
 
-            self.validate_input_files(
-                params.input.from_files
-                )
+            self.validate_input_files(params.input.from_files)
 
         else:
 
-            self.validate_input_from_directories(
-                params.input.from_directories
-                )
+            self.validate_input_from_directories(params.input.from_directories)
 
     def validate_input_files(self, f_params):
 
@@ -238,17 +223,19 @@ class validate_params(object):
 
             assert pl.Path(p).exists()
 
-        if (not f_params.mtz):
+        if not f_params.mtz:
 
             logger(
-                'No MTZ files provided. Looking for files with the same naming as pdb files: \n\t{}'.format(
-                    '\n\t'.join([
-                        '{pdb} -> {mtz}'.format(
-                            pdb = p,
-                            mtz = str(pl.Path(p).with_suffix('.mtz')),
+                "No MTZ wrappers provided. Looking for wrappers with the same naming as pdb wrappers: \n\t{}".format(
+                    "\n\t".join(
+                        [
+                            "{pdb} -> {mtz}".format(
+                                pdb=p,
+                                mtz=str(pl.Path(p).with_suffix(".mtz")),
                             )
-                        for p in f_params.pdb
-                        ]),
+                            for p in f_params.pdb
+                        ]
+                    ),
                 )
             )
 
@@ -256,10 +243,12 @@ class validate_params(object):
 
             for p in f_params.pdb:
 
-                m = pl.Path(p).with_suffix('.mtz')
+                m = pl.Path(p).with_suffix(".mtz")
 
                 if not m.exists():
-                    raise ValueError('No MTZs provided and MTZ not found: {}'.format(str(m)))
+                    raise ValueError(
+                        "No MTZs provided and MTZ not found: {}".format(str(m))
+                    )
 
                 f_params.mtz.append(str(m))
 
@@ -278,11 +267,11 @@ class validate_params(object):
 
         if f_params.mtz_style is None:
 
-            f_params.mtz_style = (
-                f_params.pdb_style.rsplit('.pdb')[0] + '.mtz'
-                )
+            f_params.mtz_style = f_params.pdb_style.rsplit(".pdb")[0] + ".mtz"
 
-            logger('Setting mtz_style is automatic value: {}'.format(f_params.mtz_style))
+            logger(
+                "Setting mtz_style is automatic value: {}".format(f_params.mtz_style)
+            )
 
         dir_paths = list(map(pl.Path, f_params.directory))
 
@@ -293,57 +282,56 @@ class validate_params(object):
 
             if len(pdbs) == 0:
                 raise ValueError(
-                    'No PDB files found in directory for pdb_style: {}'.format(
+                    "No PDB wrappers found in directory for pdb_style: {}".format(
                         str(d),
-                        )
                     )
+                )
 
             if len(pdbs) > 1:
                 raise ValueError(
-                    'More than one PDB file in directory {} matches pdb_style: \n\t{}'.format(
+                    "More than one PDB file in directory {} matches pdb_style: \n\t{}".format(
                         str(d),
                         str(pdbs),
-                        )
                     )
+                )
 
             if len(mtzs) == 0:
                 raise ValueError(
-                    'No MTZ files found in directory for mtz_style: {}'.format(
+                    "No MTZ wrappers found in directory for mtz_style: {}".format(
                         str(d)
-                        )
                     )
+                )
             if len(mtzs) > 1:
                 raise ValueError(
-                    'More than one MTZ file in directory {} matches mtz_style: \n\t{}'.format(
+                    "More than one MTZ file in directory {} matches mtz_style: \n\t{}".format(
                         str(d),
                         str(mtzs),
-                        )
                     )
+                )
 
     def validate_reference_files(self, params):
 
-        if (params.input.from_files.reference_pdb):
+        if params.input.from_files.reference_pdb:
 
             for p in params.input.from_files.reference_pdb:
 
                 assert pl.Path(p).exists()
 
-        if (params.input.from_files.reference_mtz):
+        if params.input.from_files.reference_mtz:
 
-            assert (
-                len(params.input.from_files.reference_pdb) ==
-                len(params.input.from_files.reference_mtz)
-                )
+            assert len(params.input.from_files.reference_pdb) == len(
+                params.input.from_files.reference_mtz
+            )
 
             for m in params.input.from_files.reference_mtz:
 
                 assert pl.Path(m).exists()
 
-        elif (params.input.from_files.reference_pdb):
+        elif params.input.from_files.reference_pdb:
 
             for p in params.input.from_files.reference_pdb:
 
-                m = pl.Path(p).with_suffix('.mtz')
+                m = pl.Path(p).with_suffix(".mtz")
 
                 if m.exists():
 
@@ -387,25 +375,19 @@ class Config(object):
         if p.output.log:
             pass
         else:
-            p.output.log = str(
-                pl.Path(p.output.out_dir) / 'score_model.log'
-                )
+            p.output.log = str(pl.Path(p.output.out_dir) / "score_model.log")
 
         return p.output.log
 
     def get_datasets(self):
 
-        logger.subheading('Loading Datasets')
+        logger.subheading("Loading Datasets")
 
         p = self.params
 
         # Apply labels
 
-        labels = (
-            list(p.input.label)
-            if p.input.label is not None
-            else None
-            )
+        labels = list(p.input.label) if p.input.label is not None else None
 
         #
 
@@ -420,22 +402,20 @@ class Config(object):
             else:
 
                 labelling = (
-                    PathLabeller('basename')
-                    if
-                    p.input.labelling == 'automatic'
-                    else
-                    PathLabeller(p.input.labelling)
-                    )
+                    PathLabeller("basename")
+                    if p.input.labelling == "automatic"
+                    else PathLabeller(p.input.labelling)
+                )
 
             for pdb_path, mtz_path in zip(
                 p.input.from_files.pdb,
                 p.input.from_files.mtz,
-                ):
+            ):
 
                 d = CrystallographicDataset.from_file(
-                    model_filename = pdb_path,
-                    data_filename = mtz_path,
-                    )
+                    model_filename=pdb_path,
+                    data_filename=mtz_path,
+                )
 
                 if labels:
                     d.label(tag=labels.pop(0))
@@ -453,12 +433,10 @@ class Config(object):
             else:
 
                 labelling = (
-                    PathLabeller('foldername')
-                    if
-                    p.input.labelling == 'automatic'
-                    else
-                    PathLabeller(p.input.labelling)
-                    )
+                    PathLabeller("foldername")
+                    if p.input.labelling == "automatic"
+                    else PathLabeller(p.input.labelling)
+                )
 
             for dir_path in map(pl.Path, p.input.from_directories.directory):
 
@@ -466,9 +444,9 @@ class Config(object):
                 mtz_path = next(dir_path.glob(p.input.from_directories.mtz_style))
 
                 d = CrystallographicDataset.from_file(
-                    model_filename = str(pdb_path),
-                    data_filename = str(mtz_path),
-                    )
+                    model_filename=str(pdb_path),
+                    data_filename=str(mtz_path),
+                )
 
                 if labels:
                     d.label(tag=labels.pop(0))
@@ -483,13 +461,13 @@ class Config(object):
 
         ##
 
-        logger('\n> Loaded datasets:\n')
+        logger("\n> Loaded datasets:\n")
 
         for d in datasets:
 
             logger(str(d))
 
-        logger('\n\n> {} datasets loaded'.format(len(datasets)))
+        logger("\n\n> {} datasets loaded".format(len(datasets)))
 
         ##
 
@@ -497,7 +475,7 @@ class Config(object):
 
     def get_reference_datasets(self):
 
-        logger.subheading('Loading Reference Datasets')
+        logger.subheading("Loading Reference Datasets")
 
         p = self.params
 
@@ -508,12 +486,12 @@ class Config(object):
             for pdb_path, mtz_path in zip(
                 p.input.from_files.reference_pdb,
                 p.input.from_files.reference_mtz,
-                ):
+            ):
 
                 d = CrystallographicDataset.from_file(
-                    model_filename = pdb_path,
-                    data_filename = mtz_path,
-                    )
+                    model_filename=pdb_path,
+                    data_filename=mtz_path,
+                )
 
                 datasets.append(d)
 
@@ -523,14 +501,12 @@ class Config(object):
 
                 try:
                     pdb_path = str(
-                        next(dir_path.glob(p.input.from_directories.reference_pdb_style))
+                        next(
+                            dir_path.glob(p.input.from_directories.reference_pdb_style)
                         )
+                    )
                 except:
-                    logger(
-                        'No reference PDB found in {}'.format(
-                            str(dir_path)
-                            )
-                        )
+                    logger("No reference PDB found in {}".format(str(dir_path)))
                     pdb_path = None
 
                 if pdb_path is None:
@@ -539,38 +515,36 @@ class Config(object):
 
                 try:
                     mtz_path = str(
-                        next(dir_path.glob(p.input.from_directories.reference_mtz_style))
+                        next(
+                            dir_path.glob(p.input.from_directories.reference_mtz_style)
                         )
+                    )
                 except:
-                    logger(
-                        'No reference MTZ found for {}'.format(
-                            str(dir_path)
-                            )
-                        )
+                    logger("No reference MTZ found for {}".format(str(dir_path)))
                     mtz_path = None
 
                 d = CrystallographicDataset.from_file(
-                    model_filename = pdb_path,
-                    data_filename = mtz_path,
-                    )
+                    model_filename=pdb_path,
+                    data_filename=mtz_path,
+                )
 
                 datasets.append(d)
 
         else:
 
-            logger('No reference datasets loaded')
+            logger("No reference datasets loaded")
 
             return None
 
         ##
 
-        logger('\n> Loaded reference datasets:\n')
+        logger("\n> Loaded reference datasets:\n")
 
         for d in datasets:
 
             logger(str(d))
 
-        logger('\n\n> {} reference datasets loaded'.format(len(datasets)))
+        logger("\n\n> {} reference datasets loaded".format(len(datasets)))
 
         ##
 
@@ -581,36 +555,36 @@ class Config(object):
         p = self.params.plot.parameters
 
         d = {
-            'axis_params' : {
-                'rscc' : {
-                    'title' : p.rscc.title,
-                    'axis_min' : p.rscc.axis_min,
-                    'axis_max' : p.rscc.axis_max,
-                    'axis_invert' : p.rscc.axis_invert,
+            "axis_params": {
+                "rscc": {
+                    "title": p.rscc.title,
+                    "axis_min": p.rscc.axis_min,
+                    "axis_max": p.rscc.axis_max,
+                    "axis_invert": p.rscc.axis_invert,
                 },
-                'rszd' : {
-                    'title' : p.rszd.title,
-                    'axis_min' : p.rszd.axis_min,
-                    'axis_max' : p.rszd.axis_max,
-                    'axis_invert' : p.rszd.axis_invert,
+                "rszd": {
+                    "title": p.rszd.title,
+                    "axis_min": p.rszd.axis_min,
+                    "axis_max": p.rszd.axis_max,
+                    "axis_invert": p.rszd.axis_invert,
                 },
-                'rszo' : {
-                    'title' : p.rszo.title,
-                    'axis_min' : p.rszo.axis_min,
-                    'axis_max' : p.rszo.axis_max,
-                    'axis_invert' : p.rszo.axis_invert,
+                "rszo": {
+                    "title": p.rszo.title,
+                    "axis_min": p.rszo.axis_min,
+                    "axis_max": p.rszo.axis_max,
+                    "axis_invert": p.rszo.axis_invert,
                 },
-                'b_factor_ratio' : {
-                    'title' : p.b_factor_ratio.title,
-                    'axis_min' : p.b_factor_ratio.axis_min,
-                    'axis_max' : p.b_factor_ratio.axis_max,
-                    'axis_invert' : p.b_factor_ratio.axis_invert,
+                "b_factor_ratio": {
+                    "title": p.b_factor_ratio.title,
+                    "axis_min": p.b_factor_ratio.axis_min,
+                    "axis_max": p.b_factor_ratio.axis_max,
+                    "axis_invert": p.b_factor_ratio.axis_invert,
                 },
-                'rmsd' : {
-                    'title' : p.rmsd.title,
-                    'axis_min' : p.rmsd.axis_min,
-                    'axis_max' : p.rmsd.axis_max,
-                    'axis_invert' : p.rmsd.axis_invert,
+                "rmsd": {
+                    "title": p.rmsd.title,
+                    "axis_min": p.rmsd.axis_min,
+                    "axis_max": p.rmsd.axis_max,
+                    "axis_invert": p.rmsd.axis_invert,
                 },
             },
         }
@@ -625,72 +599,69 @@ def run(params):
     config.setup_dir()
 
     logger = lg.setup_logging(
-        name = __name__,
-        log_file = config.set_get_log(),
-        debug = bool(params.settings.verbose),
-        )
+        name=__name__,
+        log_file=config.set_get_log(),
+        debug=bool(params.settings.verbose),
+    )
 
-    logger.heading(
-        'Validating input parameters and input files'
-        )
+    logger.heading("Validating input parameters and input wrappers")
 
     validate_params(params)
 
     log_running_parameters(
-        params = params,
-        master_phil = master_phil,
-        logger = logger,
+        params=params,
+        master_phil=master_phil,
+        logger=logger,
     )
 
-    logger.heading(
-        'Setting up...'
-        )
+    logger.heading("Setting up...")
 
     score_models = ScoreModelMultiple(
-        score_model = ScoreModelSingle(
-            get_interesting_resnames = GetInterestingResnames(
-                ignore_common_molecules = params.options.ignore_common_molecules,
-                include_resnames_list = params.options.include_resname,
-                ignore_resnames_list = params.options.ignore_resname,
-                ),
+        score_model=ScoreModelSingle(
+            get_interesting_resnames=GetInterestingResnames(
+                ignore_common_molecules=params.options.ignore_common_molecules,
+                include_resnames_list=params.options.include_resname,
+                ignore_resnames_list=params.options.ignore_resname,
             ),
-        processor = ProcessorJoblib(
-            n_cpus = params.settings.cpus,
-            ),
-        )
+        ),
+        processor=ProcessorJoblib(
+            n_cpus=params.settings.cpus,
+        ),
+    )
 
     write_output = WriteScores(
-        make_radar_plot = ValidationRadarPlot(
-            plot_defaults = config.get_plot_parameters(),
-            ),
-        )
+        make_radar_plot=ValidationRadarPlot(
+            plot_defaults=config.get_plot_parameters(),
+        ),
+    )
 
-    logger.heading('Loading Datasets')
+    logger.heading("Loading Datasets")
 
     datasets = config.get_datasets()
     reference_datasets = config.get_reference_datasets()
 
-    logger.heading('Scoring Models')
+    logger.heading("Scoring Models")
 
     results_df = score_models(
-        dataset_list = datasets,
-        reference_datasets = reference_datasets,
-        )
+        dataset_list=datasets,
+        reference_datasets=reference_datasets,
+    )
 
-    logger.heading('Writing output')
+    logger.heading("Writing output")
 
     output_dict = write_output(
-        residue_scores_df = results_df,
-        dir_path = pl.Path(params.output.out_dir),
-        )
+        residue_scores_df=results_df,
+        dir_path=pl.Path(params.output.out_dir),
+    )
 
     if False:
 
-        logger.subheading('Collating all images and outputting to output HTML...')
+        logger.subheading("Collating all images and outputting to output HTML...")
 
         # Get template to be filled in
         from giant.html import HTML_ENV
-        template = HTML_ENV.get_template('summary_page.html')
+
+        template = HTML_ENV.get_template("summary_page.html")
 
         # Output directory (for relative symlinks)
         out_dir = os.path.abspath(os.path.dirname(summary_file))
@@ -698,33 +669,39 @@ def run(params):
         # ===========================================================>
         # Construct the data object to populate the template
         output_data = {}
-        output_data['header'] = 'Residue Score Summaries'
-        output_data['title'] = 'Residue Score Summaries'
-        output_data['introduction'] = 'Model Quality and Validation checks.'
+        output_data["header"] = "Residue Score Summaries"
+        output_data["title"] = "Residue Score Summaries"
+        output_data["introduction"] = "Model Quality and Validation checks."
         # ===========================================================>
         # Header Images
-        output_data['small_images'] = []
-        for img in (list(combined_images.values()) + list(separate_images.values())):
-            output_data['small_images'].append({
-                'path': './'+os.path.relpath(path=img, start=out_dir),
-                'title': 'Scores for {}'.format(os.path.splitext(os.path.basename(img))[0]),
-            })
+        output_data["small_images"] = []
+        for img in list(combined_images.values()) + list(separate_images.values()):
+            output_data["small_images"].append(
+                {
+                    "path": "./" + os.path.relpath(path=img, start=out_dir),
+                    "title": "Scores for {}".format(
+                        os.path.splitext(os.path.basename(img))[0]
+                    ),
+                }
+            )
         # ===========================================================>
         # Write Output
-        with open(summary_file, 'w') as out_html:
+        with open(summary_file, "w") as out_html:
             out_html.write(template.render(output_data))
 
-    logger.heading('finished normally!')
+    logger.heading("finished normally!")
+
 
 #######################################
 
-if __name__=='__main__':
+if __name__ == "__main__":
     from giant.jiffies import run_default
+
     run_default(
-        run                 = run,
-        master_phil         = master_phil,
-        args                = sys.argv[1:],
-        blank_arg_prepend   = blank_arg_prepend,
-        program             = PROGRAM,
-        description         = DESCRIPTION,
+        run=run,
+        master_phil=master_phil,
+        args=sys.argv[1:],
+        blank_arg_prepend=blank_arg_prepend,
+        program=PROGRAM,
+        description=DESCRIPTION,
     )

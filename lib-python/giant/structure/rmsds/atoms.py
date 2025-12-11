@@ -1,7 +1,7 @@
-import giant.logs as lg
-logger = lg.getLogger(__name__)
-
 import giant.common.geometry as gm
+import giant.logs as lg
+
+logger = lg.getLogger(__name__)
 
 
 class CalculatePairedAtomSetsRMSD(object):
@@ -12,23 +12,21 @@ class CalculatePairedAtomSetsRMSD(object):
     Raises error if atom names are present more than once in each list (e.g. alternate conformers of atoms)
     """
 
-    def __init__(self,
-        truncate_to_common_set = True,
-        remove_hydrogens = True,
-        ):
+    def __init__(
+        self,
+        truncate_to_common_set=True,
+        remove_hydrogens=True,
+    ):
 
-        self.truncate_to_common_set = bool(
-            truncate_to_common_set
-            )
+        self.truncate_to_common_set = bool(truncate_to_common_set)
 
-        self.remove_hydrogens = bool(
-            remove_hydrogens
-            )
+        self.remove_hydrogens = bool(remove_hydrogens)
 
-    def __call__(self,
+    def __call__(
+        self,
         atoms_1,
         atoms_2,
-        ):
+    ):
 
         atoms_1 = self.filter_atoms(atoms_1)
         atoms_2 = self.filter_atoms(atoms_2)
@@ -44,12 +42,14 @@ class CalculatePairedAtomSetsRMSD(object):
             if atom_keys_1.symmetric_difference(atom_keys_2):
                 return None
 
-        atom_keys = list(atom_keys_1.intersection(atom_keys_2)) # ordering does not matter
+        atom_keys = list(
+            atom_keys_1.intersection(atom_keys_2)
+        )  # ordering does not matter
 
         rmsd = gm.rmsd_coordinates(
-            points_1 = [atom_dict_1[k].xyz for k in atom_keys],
-            points_2 = [atom_dict_2[k].xyz for k in atom_keys],
-            )
+            points_1=[atom_dict_1[k].xyz for k in atom_keys],
+            points_2=[atom_dict_2[k].xyz for k in atom_keys],
+        )
 
         return rmsd
 
@@ -57,7 +57,6 @@ class CalculatePairedAtomSetsRMSD(object):
 
         if self.remove_hydrogens is True:
 
-            atoms = atoms.select(atoms.extract_element() != ' H')
+            atoms = atoms.select(atoms.extract_element() != " H")
 
         return atoms
-

@@ -1,19 +1,18 @@
-import os, copy
-import pytest
+import copy
+import os
 import pathlib as pl
 
-from giant.tests.jiffies.resources import (
-    MultiStateResources,
-    )
+import pytest
+
+from giant.tests.jiffies.resources import MultiStateResources
+
 
 @pytest.fixture(scope="module")
 def resources():
 
     this = pl.Path(__file__)
 
-    resources_path = (
-        this.parent / 'resources'
-        )
+    resources_path = this.parent / "resources"
 
     assert resources_path.exists()
 

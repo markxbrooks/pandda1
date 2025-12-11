@@ -3,10 +3,11 @@ import numpy as np
 
 class iTracker(object):
 
-    def __init__(self,
+    def __init__(
+        self,
         n_total,
-        i_start = 0,
-        ):
+        i_start=0,
+    ):
 
         self.i_current = i_start
         self.n_total = n_total
@@ -17,9 +18,7 @@ class iTracker(object):
 
     def set(self, i):
 
-        self.i_current = (
-            i % self.n_total
-            )
+        self.i_current = i % self.n_total
 
         return self.get()
 
@@ -54,14 +53,15 @@ class LigandTracker(iTracker):
 
 class SiteTracker(object):
 
-    def __init__(self,
+    def __init__(
+        self,
         site_idxs,
         event_tracker,
-        ):
+    ):
 
         self.site_idxs = site_idxs
         self.n_total = len(set(site_idxs))
-        
+
         if not np.isnan(self.site_idxs).all():
             assert self.site_idxs.min() == 0
             assert self.site_idxs.max() == (self.n_total - 1)
@@ -107,5 +107,3 @@ class SiteTracker(object):
         event_idxs = np.where(self.site_idxs == site_idx)[0]
 
         return event_idxs[0]
-
-

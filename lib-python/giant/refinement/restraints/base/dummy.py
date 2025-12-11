@@ -1,6 +1,4 @@
-from .collection import (
-    RestraintsCollection,
-    )
+from .collection import RestraintsCollection
 
 
 class DummyRestraintMaker(object):
@@ -14,13 +12,9 @@ class DummyRestraintMaker(object):
 
     def __str__(self):
 
-        s_ = (
-            'Task: {name}\n'
-            '| This task does nothing.\n'
-            '`---->'
-            ).format(
-                name = self.name,
-                )
+        s_ = ("Task: {name}\n" "| This task does nothing.\n" "`---->").format(
+            name=self.name,
+        )
 
         return s_.strip()
 

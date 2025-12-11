@@ -1,7 +1,8 @@
-import giant.logs as lg
-logger = lg.getLogger(__name__)
-
 import traceback
+
+import giant.logs as lg
+
+logger = lg.getLogger(__name__)
 
 
 class GetDummyClass(object):
@@ -21,7 +22,8 @@ class GetDummyClass(object):
 
 class DummyClass(object):
     """
-    A class that can be passed to override automatically assigned internal classes.
+    A class that can be passed to override automatically
+    assigned internal classes.
     Typically used to nullify an output class.
     """
 
@@ -43,7 +45,7 @@ class DelayedGetter(object):
 
     def __call__(self, *args, **kwargs):
 
-        if (self.func is None):
+        if self.func is None:
             self.func = self.get_func()
 
         return self.func(*args, **kwargs)
@@ -62,7 +64,7 @@ class TaskWrapper(object):
         try:
             return self.func(*self.args, **self.kwargs)
         except Exception as e:
-            if (self.verbose is True):
+            if self.verbose is True:
                 logger(traceback.format_exc())
             raise
 
@@ -74,6 +76,5 @@ class IteratorIterator(object):
 
     def __iter__(self):
         for i in self.iterators:
-            for ii in i: 
+            for ii in i:
                 yield ii
-        

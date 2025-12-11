@@ -1,45 +1,37 @@
-import giant.logs as lg
-logger = lg.getLogger(__name__)
-
 import pathlib as pl
 
-from .datasets import (
-    DatasetsFileSystem,
-    )
+import giant.logs as lg
 
-from .models import (
-    ModelsFileSystem,
-    )
+from .datasets import DatasetsFileSystem
+from .models import ModelsFileSystem
+
+logger = lg.getLogger(__name__)
 
 
 class MassRefineFileSystem(object):
 
     def __init__(self, work_folder):
 
-        self.work_folder = pl.Path(
-            work_folder
-            )
+        self.work_folder = pl.Path(work_folder)
 
         self.datasets = DatasetsFileSystem(
-            self.work_folder / 'datasets',
-            )
+            self.work_folder / "datasets",
+        )
 
         self.models = ModelsFileSystem(
-            self.work_folder / 'models',
-            )
+            self.work_folder / "models",
+        )
 
-        self.config_path = (
-            self.work_folder / 'config.json'
-            )
+        self.config_path = self.work_folder / "config.json"
 
     def update(self):
 
-        if self.exists(): 
+        if self.exists():
             self.validate()
             self.rebuild()
         else:
             self.initialise()
-        
+
         return self
 
     def exists(self):
@@ -50,7 +42,7 @@ class MassRefineFileSystem(object):
         assert not self.exists()
 
         self.work_folder.mkdir(parents=True)
-        
+
         self.datasets.initialise()
         self.models.initialise()
 
@@ -61,5 +53,3 @@ class MassRefineFileSystem(object):
 
     def rebuild(self):
         pass
-
-

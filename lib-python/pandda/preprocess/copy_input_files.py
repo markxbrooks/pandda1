@@ -1,17 +1,14 @@
-import giant.logs as lg 
-logger = lg.getLogger(__name__)
+import giant.logs as lg
 
 import collections
 import pathlib as pl
 
-from pandda.utils import (
-    show_dict,
-    )
-
+from pandda.utils import show_dict
+logger = lg.getLogger(__name__)
 
 class CopyDatasetPath(object):
 
-    out_dir_template = '{dtag}'
+    out_dir_template = "{dtag}"
     out_path_template = None
 
     def __init__(self, mode="link"):
@@ -23,13 +20,11 @@ class CopyDatasetPath(object):
         out_dir = pl.Path(target_dir) / self.get_output_directory(**fmt_dict)
         if not out_dir.exists():
             out_dir.mkdir(parents=True)
-        out_path = (
-            out_dir / self.get_output_filename(**fmt_dict)
-            )
+        out_path = out_dir / self.get_output_filename(**fmt_dict)
         self.copy_file(
-            source_path = src_path,
-            output_path = out_path,
-            )
+            source_path=src_path,
+            output_path=out_path,
+        )
         return str(out_path)
 
     def get_tag(self, dataset):
@@ -37,41 +32,35 @@ class CopyDatasetPath(object):
 
     def get_dict(self, dataset):
         return {
-            'dtag': self.get_tag(dataset),
-            }
+            "dtag": self.get_tag(dataset),
+        }
 
     def get_source_path(self, dataset):
         return None
 
     def get_output_directory(self, **kw_args):
-        return pl.Path(
-            self.out_dir_template.format(
-                **kw_args
-                )
-            )
+        return pl.Path(self.out_dir_template.format(**kw_args))
 
     def get_output_filename(self, **kw_args):
-        return pl.Path(
-            self.out_path_template.format(
-                **kw_args
-                )
-            )
+        return pl.Path(self.out_path_template.format(**kw_args))
 
     def copy_file(self, source_path, output_path):
-        if (self.mode == "link"):
+        if self.mode == "link":
             from giant.paths import rel_symlink
+
             rel_symlink(
                 str(source_path),
                 str(output_path),
-                )
-        elif (self.mode == "copy"):
+            )
+        elif self.mode == "copy":
             import shutil
+
             shutil.copy(
                 str(source_path),
                 str(output_path),
-                )
+            )
         else:
-            raise NotImplemented('mode "{}" not valid'.formats(self.mode))
+            raise NotImplementedError('mode "{}" not valid'.formats(self.mode))
 
 
 class CopyInputStructure(CopyDatasetPath):
@@ -95,17 +84,18 @@ class FindAndCopyLigands(CopyDatasetPath):
     out_dir_template = "{dtag}/ligand_files"
     out_path_template = "{dtag}-pandda-ligand-{num:03d}.cif"
 
-    def __init__(self,
-        mode = "copy",
-        regex = "*.cif",
-        rel_search_path = None,
-        find_and_copy_matching_pdbs = True,
-        rename_files = False,
-        ):
+    def __init__(
+        self,
+        mode="copy",
+        regex="*.cif",
+        rel_search_path=None,
+        find_and_copy_matching_pdbs=True,
+        rename_files=False,
+    ):
 
         super(FindAndCopyLigands, self).__init__(
-            mode = mode,
-            )
+            mode=mode,
+        )
 
         self.regex = regex
         self.rel_search_path = rel_search_path
@@ -124,35 +114,33 @@ class FindAndCopyLigands(CopyDatasetPath):
 
         for i, src_path in enumerate(self.get_ligand_paths(dataset)):
 
-            if (self.rename_files is True):
-                out_path = out_dir / self.get_output_filename(num=i+1, **fmt_dict)
+            if self.rename_files is True:
+                out_path = out_dir / self.get_output_filename(num=i + 1, **fmt_dict)
             else:
                 out_path = out_dir / src_path.name
 
             self.copy_file(
-                source_path = src_path,
-                output_path = out_path,
-                )
+                source_path=src_path,
+                output_path=out_path,
+            )
 
-            output_files.append(
-                str(out_path)
-                )
+            output_files.append(str(out_path))
 
-            if (self.find_and_copy_matching_pdbs is True):
-                src_pdb = src_path.with_suffix('.pdb')
+            if self.find_and_copy_matching_pdbs is True:
+                src_pdb = src_path.with_suffix(".pdb")
                 if src_pdb.exists():
-                    out_pdb = out_path.with_suffix('.pdb')
+                    out_pdb = out_path.with_suffix(".pdb")
                     self.copy_file(
-                        source_path = src_pdb,
-                        output_path = out_pdb,
-                        )
+                        source_path=src_pdb,
+                        output_path=out_pdb,
+                    )
 
         return output_files
 
     def get_ligand_paths(self, dataset):
         search_dir = pl.Path(dataset.data.filename).parent
-        if (self.rel_search_path is not None):
-            search_dir = (search_dir / self.rel_search_path)
+        if self.rel_search_path is not None:
+            search_dir = search_dir / self.rel_search_path
         return search_dir.glob(self.regex)
 
 
@@ -176,10 +164,10 @@ class CopyPanddaInputFiles(object):
         for dtag, dataset in mcd.datasets.items():
 
             output_files[dtag] = self.copy_dataset_files(
-                dataset = dataset,
-                )
+                dataset=dataset,
+            )
 
-        logger.subheading('Files copied to output folder')
+        logger.subheading("Files copied to output folder")
         show_dict(output_files, logger=logger)
 
         return output_files
@@ -188,19 +176,19 @@ class CopyPanddaInputFiles(object):
 
         output_files = collections.OrderedDict()
 
-        output_files['structure'] = self.copy_structure(
-            dataset = dataset,
-            target_dir = self.output_dir,
-            )
+        output_files["structure"] = self.copy_structure(
+            dataset=dataset,
+            target_dir=self.output_dir,
+        )
 
-        output_files['data'] = self.copy_data(
-            dataset = dataset,
-            target_dir = self.output_dir,
-            )
+        output_files["data"] = self.copy_data(
+            dataset=dataset,
+            target_dir=self.output_dir,
+        )
 
-        output_files['ligands'] = self.copy_ligands(
-            dataset = dataset,
-            target_dir = self.output_dir,
-            )
-        
+        output_files["ligands"] = self.copy_ligands(
+            dataset=dataset,
+            target_dir=self.output_dir,
+        )
+
         return output_files

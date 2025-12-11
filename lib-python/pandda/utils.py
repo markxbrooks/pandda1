@@ -1,12 +1,9 @@
-import giant.logs as lg
-logger = lg.getLogger(__name__)
+import json
 
-from giant.utils import (
-    make_sorted_dict,
-    show_dict,
-    merge_dicts,
-    pretty_format_list,
-    )
+import giant.logs as lg
+from giant.utils import make_sorted_dict, merge_dicts, pretty_format_list, show_dict
+
+logger = lg.getLogger(__name__)
 
 
 class DataCollator(object):
@@ -18,9 +15,9 @@ class DataCollator(object):
     def __call__(self, update_dict):
 
         merge_dicts(
-            master_dict = self.data,
-            merge_dict = update_dict,
-            )
+            master_dict=self.data,
+            merge_dict=update_dict,
+        )
 
         return self.data
 
@@ -28,8 +25,8 @@ class DataCollator(object):
 
         s = json.dumps(
             self.data,
-            indent = 2,
-            )
+            indent=2,
+        )
 
         return s
 
@@ -37,5 +34,5 @@ class DataCollator(object):
 
         return make_sorted_dict(
             self.data,
-            recursive = recursive,
-            )
+            recursive=recursive,
+        )

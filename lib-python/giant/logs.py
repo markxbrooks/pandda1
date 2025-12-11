@@ -1,5 +1,5 @@
-import sys
 import logging as lg
+import sys
 
 INFO = lg.INFO
 WARNING = lg.WARNING
@@ -9,57 +9,57 @@ DEBUG = lg.DEBUG
 class Bar(object):
 
     width = 40
-    body = '-'
-    head = '>>>'
+    body = "-"
+    head = ">>>"
 
     def __init__(self):
         self.body_width = max(0, self.width - len(self.head))
-        self._bar = self.body*self.body_width + self.head
+        self._bar = self.body * self.body_width + self.head
 
     def __call__(self, blank_before=False, blank_after=False):
-        return '\n'*blank_before + self._bar + '\n'*blank_after
+        return "\n" * blank_before + self._bar + "\n" * blank_after
 
 
 class Heading(object):
 
     width = 100
-    spacer = '#'
-    decorator = ' <~~~> '
+    spacer = "#"
+    decorator = " <~~~> "
     side_width = 3
 
     def __init__(self):
-        self.content_width = max(0, self.width - (2*self.side_width))
+        self.content_width = max(0, self.width - (2 * self.side_width))
         self.side_padding = self.side_width * self.spacer
 
     def __call__(self, text, spacer=False, blank=False):
         text = str(text)
-        actual_width = max(len(text)+2, self.content_width)
+        actual_width = max(len(text) + 2, self.content_width)
 
         lines = [
-            self.fmt(txt='',   width=actual_width, fill=self.spacer),
-            self.fmt(txt=text, width=actual_width, fill=' '),
-            self.fmt(txt='',   width=actual_width, fill=self.spacer),
+            self.fmt(txt="", width=actual_width, fill=self.spacer),
+            self.fmt(txt=text, width=actual_width, fill=" "),
+            self.fmt(txt="", width=actual_width, fill=self.spacer),
         ]
 
         if spacer is True:
-            s = self.fmt(txt='', width=actual_width, fill=' ')
+            s = self.fmt(txt="", width=actual_width, fill=" ")
             lines.insert(1, s)
             lines.insert(3, s)
 
         if blank is True:
-            lines.insert(0, '\n')
-            lines.append('\n')
+            lines.insert(0, "\n")
+            lines.append("\n")
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
-    def fmt(self, txt, width, fill=' '):
+    def fmt(self, txt, width, fill=" "):
         return self.side_padding + txt.center(width, fill) + self.side_padding
 
 
 class SubHeading(Heading):
 
-    spacer = '-'
-    decorator = ' ** '
+    spacer = "-"
+    decorator = " ** "
     side_width = 3
 
 
@@ -86,7 +86,7 @@ class ListStream(object):
         return iter(self.data)
 
     def format(self):
-        return ''.join(self.data)
+        return "".join(self.data)
 
     def write(self, s):
         self.data.append(s)
@@ -111,16 +111,23 @@ class LoggerWithHeadings(lg.Logger):
         self.info(msg, *args, **kwargs)
 
     def heading(self, message, spacer=False, blank=True, level=lg.INFO):
-        self.log(level=level, msg=self._heading(text=message, spacer=spacer, blank=blank))
+        self.log(
+            level=level, msg=self._heading(text=message, spacer=spacer, blank=blank)
+        )
 
     def subheading(self, message, spacer=False, blank=True, level=lg.INFO):
-        self.log(level=level, msg=self._subheading(text=message, spacer=spacer, blank=blank))
+        self.log(
+            level=level, msg=self._subheading(text=message, spacer=spacer, blank=blank)
+        )
 
     def bar(self, blank_before=False, blank_after=False, level=lg.INFO):
-        self.log(level=level, msg=self._bar(blank_before=blank_before, blank_after=blank_after))
+        self.log(
+            level=level,
+            msg=self._bar(blank_before=blank_before, blank_after=blank_after),
+        )
 
 
-class ListHandler(lg.Handler): # Inherit from logging.Handler
+class ListHandler(lg.Handler):  # Inherit from logging.Handler
 
     def __init__(self):
         # run the regular Handler __init__
@@ -141,7 +148,7 @@ class ListHandler(lg.Handler): # Inherit from logging.Handler
 
 class WarningListHandler(ListHandler):
 
-    def __init__(self, name='warnings'):
+    def __init__(self, name="warnings"):
         # run the regular ListHandler __init__
         ListHandler.__init__(self)
         # Custom attributes
@@ -158,7 +165,7 @@ class WarningListHandler(ListHandler):
             return
         # Iterate through messages and report
         n = self.size() - i
-        l.subheading('{} new warnings generated'.format(n))
+        l.subheading("{} new warnings generated".format(n))
         for w in self.list(start_i=i):
             l.bar(True, True)
             l(w)
@@ -173,27 +180,28 @@ class WarningListHandler(ListHandler):
         n = self.size()
         # No warnings? Great!
         if n == 0:
-            l.subheading('Reported warnings')
-            l('> No warnings!')
+            l.subheading("Reported warnings")
+            l("> No warnings!")
             return
         # Report warnings
-        banner = '{} warnings/non-fatal errors (see below)'.format(n)
+        banner = "{} warnings/non-fatal errors (see below)".format(n)
         l.subheading(banner)
         for i, e in enumerate(self.list()):
             l.bar()
-            l('Warnings {} of {}'.format(i+1, n))
+            l("Warnings {} of {}".format(i + 1, n))
             l.bar()
             l(e)
-        l.subheading(banner.replace('below','above'))
+        l.subheading(banner.replace("below", "above"))
 
 
 def get_warning_handler(logger, handler_name="warnings", recurse_parents=True):
 
     return get_handler_recursive(
-        logger = logger,
-        handler_name = handler_name,
-        recurse_parents = recurse_parents,
-        )
+        logger=logger,
+        handler_name=handler_name,
+        recurse_parents=recurse_parents,
+    )
+
 
 def get_handler_recursive(logger, handler_name, recurse_parents=True):
     """
@@ -207,23 +215,24 @@ def get_handler_recursive(logger, handler_name, recurse_parents=True):
         return logger.handlers[index]
 
     # None found and is root: return none
-    if (logger is logger.root) or (logger.name == 'root'):
+    if (logger is logger.root) or (logger.name == "root"):
         return None
 
     # Check parents of logger
-    if (recurse_parents is True):
+    if recurse_parents is True:
         return get_handler_recursive(
-            logger = logger.parent,
-            handler_name = handler_name,
-            recurse_parents = recurse_parents,
+            logger=logger.parent,
+            handler_name=handler_name,
+            recurse_parents=recurse_parents,
         )
 
     return None
 
+
 def setup_root_logging(formatter=None, level=lg.INFO):
 
     if formatter is None:
-        formatter = lg.Formatter(fmt='%(message)s')
+        formatter = lg.Formatter(fmt="%(message)s")
 
     # Get root logger
     logger = lg.getLogger()
@@ -239,6 +248,7 @@ def setup_root_logging(formatter=None, level=lg.INFO):
         logger.addHandler(ch)
 
     return logger
+
 
 def get_logger_with_headings_maybe(name):
     """
@@ -256,8 +266,10 @@ def get_logger_with_headings_maybe(name):
 
     return logger
 
+
 # Shortcut for compatibility with python logging module
 getLogger = get_logger_with_headings_maybe
+
 
 def setup_logging_basic(name):
     """One liner to setup stdout logging (if not already done) and return a functioning Logger"""
@@ -266,19 +278,21 @@ def setup_logging_basic(name):
 
     return get_logger_with_headings_maybe(name)
 
-def add_warning_handler(logger, name='warnings'):
+
+def add_warning_handler(logger, name="warnings"):
 
     # Custom warning collector
     wh = WarningListHandler(name=name)
     # Special warning formatter
-    wfmt = lg.Formatter(fmt='%(levelname)s -- %(message)s')
+    wfmt = lg.Formatter(fmt="%(levelname)s -- %(message)s")
     wh.setFormatter(wfmt)
     wh.setLevel(lg.WARNING)
     logger.addHandler(wh)
 
     return wh
 
-def setup_logging(name, log_file=None, warning_handler_name='warnings', debug=False):
+
+def setup_logging(name, log_file=None, warning_handler_name="warnings", debug=False):
     """
     One liner to setup logging for a named scope with log file and warnings tracker.
     if name == '__main__' will set up the root logger.
@@ -287,7 +301,7 @@ def setup_logging(name, log_file=None, warning_handler_name='warnings', debug=Fa
     setup_root_logging()
 
     # Plain formatter
-    fmt = lg.Formatter(fmt='%(message)s')
+    fmt = lg.Formatter(fmt="%(message)s")
 
     # Set level to at least info
     if debug is True:
@@ -296,7 +310,7 @@ def setup_logging(name, log_file=None, warning_handler_name='warnings', debug=Fa
         level = lg.INFO
 
     # Get logger (special case for name == '__main__')
-    if name == '__main__':
+    if name == "__main__":
         # Get the root logger
         logger = lg.getLogger()
     else:
@@ -306,17 +320,17 @@ def setup_logging(name, log_file=None, warning_handler_name='warnings', debug=Fa
     logger.setLevel(level)
 
     # Set output log file
-    if (log_file is not None):
+    if log_file is not None:
         fh = lg.FileHandler(log_file)
         fh.setFormatter(fmt)
         fh.setLevel(lg.DEBUG)
         logger.addHandler(fh)
 
-    if (warning_handler_name is not None):
+    if warning_handler_name is not None:
 
         wh = add_warning_handler(
-            logger = logger, 
-            name = warning_handler_name,
-            )
+            logger=logger,
+            name=warning_handler_name,
+        )
 
     return get_logger_with_headings_maybe(name)

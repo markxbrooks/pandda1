@@ -2,14 +2,12 @@ import pytest
 
 #####
 
+
 def test_MultiCrystalDataset(five_baz2b_test_datasets):
 
     from giant.mulch.collection import MultiCrystalDataset
 
-    datasets = {
-        i:d 
-        for i, d in enumerate(five_baz2b_test_datasets)
-    }
+    datasets = {i: d for i, d in enumerate(five_baz2b_test_datasets)}
 
     mcd = MultiCrystalDataset(datasets=datasets)
 
@@ -18,10 +16,7 @@ def test_MultiCrystalDataset(five_baz2b_test_datasets):
     datasets_list = list(mcd)
     expected_list = list(datasets.values())
 
-    assert [
-        (d1 is d2) 
-        for d1, d2 in zip(datasets_list, expected_list)
-        ].count(True) == 5
+    assert [(d1 is d2) for d1, d2 in zip(datasets_list, expected_list)].count(True) == 5
 
     ##
 
@@ -30,10 +25,7 @@ def test_MultiCrystalDataset(five_baz2b_test_datasets):
     datasets_list = list(mcd)
     expected_list = [datasets[i] for i in range(5)]
 
-    assert [
-        (d1 is d2) 
-        for d1, d2 in zip(datasets_list, expected_list)
-        ].count(True) == 5
+    assert [(d1 is d2) for d1, d2 in zip(datasets_list, expected_list)].count(True) == 5
 
     ##
 
@@ -46,10 +38,7 @@ def test_MultiCrystalDataset(five_baz2b_test_datasets):
 
     ##
 
-    new_datasets = {
-        i:d 
-        for i, d in enumerate(five_baz2b_test_datasets[:3])
-        }
+    new_datasets = {i: d for i, d in enumerate(five_baz2b_test_datasets[:3])}
 
     mcd_2 = mcd.new_from_datasets(datasets=new_datasets)
 
@@ -64,16 +53,16 @@ def test_MultiCrystalDataset(five_baz2b_test_datasets):
     from giant.mulch.partitioners import DatasetKeyPartitioner
 
     partitioner = DatasetKeyPartitioner(
-        partition_1 = [0,1,2],
-        partition_2 = [1,4],
-        )
+        partition_1=[0, 1, 2],
+        partition_2=[1, 4],
+    )
 
     partitioned = mcd.partition(partitioner)
 
-    assert sorted(partitioned.keys()) == ["partition_1","partition_2"]
+    assert sorted(partitioned.keys()) == ["partition_1", "partition_2"]
 
-    assert list(partitioned["partition_1"].datasets.keys()) == [0,1,2]
-    assert list(partitioned["partition_2"].datasets.keys()) == [1,4]
+    assert list(partitioned["partition_1"].datasets.keys()) == [0, 1, 2]
+    assert list(partitioned["partition_2"].datasets.keys()) == [1, 4]
 
     assert partitioned["partition_1"].datasets[1] is datasets[1]
     assert partitioned["partition_2"].datasets[4] is datasets[4]

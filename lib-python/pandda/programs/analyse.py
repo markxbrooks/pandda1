@@ -1,22 +1,11 @@
+import sys
+import time
+
 import giant.logs as lg
+from pandda import ModuleBanner, config, options, phil
+from pandda.utils import DataCollator
+
 logger = lg.getLogger(__name__)
-
-import os, sys, time, copy
-
-import pathlib as pl
-
-from pandda import (
-    ModuleBanner,
-    phil,
-    config,
-    options,
-    output,
-    )
-
-from pandda.utils import (
-    DataCollator,
-    merge_dicts,
-    )
 
 DESCRIPTION = """
 pandda.analyse is a program for identifying "changed states" in crystallographic datasets.
@@ -29,15 +18,15 @@ occupancy ligands (or other changes) that are not clear in the original electron
 """
 
 program_banner = ModuleBanner(
-    program = "pandda.analyse",
-    description = DESCRIPTION,
-    )
+    program="pandda.analyse",
+    description=DESCRIPTION,
+)
+
 
 def standard_pandda(pandda_config):
-
     # Create output dictionary
     data_collator = DataCollator()
-    
+
     # Options: maps a config to code abstraction
     pandda_options = options.Options(pandda_config)
 
@@ -47,51 +36,53 @@ def standard_pandda(pandda_config):
     # This function is doing a lot of heavy lifting behind the scenes
     mcd = pandda_options.dataset_initialiser()
 
-    data_collator({
-        'output_files' : pandda_options.dataset_initialiser.output_files
-        })
+    data_collator({"output_files": pandda_options.dataset_initialiser.output_files})
 
-    # Make the main page 
+    # Make the main page
     html_files = pandda_options.make_html_output()
 
-    data_collator({
-        'output_files' : {'html': html_files},
-        })
+    data_collator(
+        {
+            "output_files": {"html": html_files},
+        }
+    )
 
     # Prepare to load maps (make grid, etc) -- also lots of heavy lifting
     map_loader = pandda_options.get_warped_map_loader(
-        reference_dataset = mcd.reference_dataset,
-        reference_map_getter = pandda_options.dataset_initialiser.reference_map_getter,
-        dataset_map_getters = pandda_options.dataset_initialiser.map_getters,
-        )
+        reference_dataset=mcd.reference_dataset,
+        reference_map_getter=pandda_options.dataset_initialiser.reference_map_getter,
+        dataset_map_getters=pandda_options.dataset_initialiser.map_getters,
+    )
 
     # Main processing loop
     pandda_results = pandda_options.run_pandda_model(
-        datasets = mcd.datasets,
-        load_maps = map_loader,
-        )
+        datasets=mcd.datasets,
+        load_maps=map_loader,
+    )
 
     data_collator(pandda_results)
 
     # Write output csvs, html, etc
     results_files = pandda_options.write_results(
-        mcd = mcd,
-        pandda_results = data_collator.data, # give all output so far
-        )
+        mcd=mcd,
+        pandda_results=data_collator.data,  # give all output so far
+    )
 
-    data_collator({
-        'output_files' : results_files,
-        })
+    data_collator(
+        {
+            "output_files": results_files,
+        }
+    )
 
     # Output results as a json so computer-readable
     pandda_options.dump_results_to_json(
-        records_dict = data_collator.get_sorted(),
-        )
+        records_dict=data_collator.get_sorted(),
+    )
 
     return data_collator.data
 
-def run(args):
 
+def run(args):
     ####################
     # Program Setup
     ####################
@@ -100,12 +91,13 @@ def run(args):
     pandda_start_time = time.time()
 
     # Parse Config files and command line arguments
-    from giant import jiffies
+    from giant import jiffies  # noqa: E402
+
     working_phil = jiffies.extract_params_default(
-        master_phil = phil.pandda_phil,
-        args = args,
-        blank_arg_prepend = None,
-        home_scope = None,
+        master_phil=phil.pandda_phil,
+        args=args,
+        blank_arg_prepend=None,
+        home_scope=None,
     ).extract()
 
     # Maps options to code abstraction: Phil -> Config
@@ -113,47 +105,49 @@ def run(args):
 
     # Initialise logging
     logger = lg.setup_logging(
-        name = __name__,
-        log_file = str(pandda_config.output.out_dir / "pandda.log"),
-        warning_handler_name = 'warnings',
-        debug = False,
-        )
+        name=__name__,
+        log_file=str(pandda_config.output.out_dir / "pandda.log"),
+        warning_handler_name="warnings",
+        debug=False,
+    )
 
     # Extract warning handler from logging objects
-    from giant.logs import get_handler_recursive
+    from giant.logs import get_handler_recursive  # noqa: E402
+
     warning_handler = get_handler_recursive(
-        logger = logger, 
-        handler_name = 'warnings',
-        )
+        logger=logger,
+        handler_name="warnings",
+    )
     assert warning_handler is not None
 
     # Log banner
     logger(str(program_banner))
 
     # Write starup info
-    from giant.phil import startup_parameters_logging
+    from giant.phil import startup_parameters_logging  # noqa: E402
+
     startup_parameters_logging(
-        output_directory = pandda_config.output.out_dir,
-        master_phil = phil.pandda_phil,
-        working_phil = working_phil,
-        )
+        output_directory=pandda_config.output.out_dir,
+        master_phil=phil.pandda_phil,
+        working_phil=working_phil,
+    )
 
     try:
 
         standard_pandda(pandda_config)
 
-    except Exception as e: 
+    except Exception as e:
 
         raise
 
     # Report warnings at the end
     warning_handler.report_all(logger_name=__name__)
 
-    # We done it! 
+    # We done it!
     logger.heading("Pandda finished normally!", spacer=True)
 
-def main():
 
+def main():
     try:
 
         lg.setup_logging_basic(__name__)
@@ -162,14 +156,15 @@ def main():
 
     except Exception as e:
 
-        import traceback
+        import traceback  # noqa: E402
+
         logger.subheading("Error - stack trace")
-        logger(traceback.format_exc())#limit=10))
+        logger(traceback.format_exc())  # limit=10))
         logger.subheading("PanDDA exited with an error")
         logger("Error: %s", str(e))
         logger.subheading("PanDDA exited with an error")
         sys.exit(1)
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     main()

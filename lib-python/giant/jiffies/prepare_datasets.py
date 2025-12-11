@@ -1,38 +1,24 @@
-import giant.logs as lg
-logger = lg.getLogger(__name__) 
-
+import pathlib as pl
 import sys
 
-import pathlib as pl
-
-from giant.phil import (
-    log_running_parameters,
-    )
-
-from giant.processors import (
-    ProcessorJoblib,
-    )
-
-from giant.mulch.labelling import (
-    PathLabeller,
-    )
-
+import giant.logs as lg
+from giant.mulch.labelling import PathLabeller
 from giant.mulch.tasks.xray.mtz_utils import (
-    PrepareMTZTask,
-    RemoveColumns,
-    ReindexMtzToReference,
     FillMissingReflections,
+    PrepareMTZTask,
+    ReindexMtzToReference,
+    RemoveColumns,
     TransferRFreeFlags,
-    )
+)
+from giant.mulch.tasks.xray.refinement_pipelines import RefinementPipelineTask
+from giant.phil import log_running_parameters
+from giant.processors import ProcessorJoblib
 
-from giant.mulch.tasks.xray.refinement_pipelines import (
-    RefinementPipelineTask,
-    )
-
+logger = lg.getLogger(__name__)
 
 ############################################################################
 
-PROGRAM = 'giant.prepare_datasets'
+PROGRAM = "giant.prepare_datasets"
 
 DESCRIPTION = """
     Take input MTZs, reindex, transfer R-free flags from a reference, 
@@ -42,12 +28,14 @@ DESCRIPTION = """
 ############################################################################
 
 blank_arg_prepend = {
-    '.mtz':'mtz=',
-    '.pdb':'reference_pdb=',
+    ".mtz": "mtz=",
+    ".pdb": "reference_pdb=",
 }
 
-import libtbx.phil
-master_phil = libtbx.phil.parse("""
+import libtbx.phil  # noqa: E402
+
+master_phil = libtbx.phil.parse(
+    """
 input {
     mtz = None
         .type = path
@@ -125,105 +113,96 @@ settings {
     verbose = False
         .type = bool
 }
-""")
+"""
+)
+
 
 def show_results(results):
+    logger.subheading("Results")
 
-    logger.subheading('Results')
-    
-    n_success = 0; errored = []
+    n_success = 0
+    errored = []
 
-    logger('Processing messages')
+    logger("Processing messages")
 
     for r in results:
 
-        if r.status.success is True: 
+        if r.status.success is True:
 
-            logger(
-                '\t{} - {}'.format(
-                    r.output.input_mtz, 
-                    'processed successfully'
-                    )
-                )
+            logger("\t{} - {}".format(r.output.input_mtz, "processed successfully"))
             n_success += 1
 
         else:
 
-            logger(
-                '\t{} - {}'.format(
-                    r.output.input_mtz, 
-                    'errored'
-                    )
-                )
+            logger("\t{} - {}".format(r.output.input_mtz, "errored"))
             errored.append(r)
 
     if len(errored) > 0:
 
-        logger.subheading('Errored datasets')
+        logger.subheading("Errored datasets")
 
-        logger('> See log files in output directory\n')
-        
+        logger("> See log wrappers in output directory\n")
+
         for r in errored:
-
             logger(
-                '\nFile: {}\n\tError(s): \n\t\t{}'.format(
-                    r.output.input_mtz, 
-                    '\n\t\t'.join([
-                        str(e) 
-                        for e in r.status.errors
-                        ]),
-                    )
+                "\nFile: {}\n\tError(s): \n\t\t{}".format(
+                    r.output.input_mtz,
+                    "\n\t\t".join([str(e) for e in r.status.errors]),
                 )
+            )
 
     logger.bar()
-    logger('Successfully processed:     {}'.format(n_success))
-    logger('Errors during processing: {}'.format(len(errored)))
+    logger("Successfully processed:     {}".format(n_success))
+    logger("Errors during processing: {}".format(len(errored)))
     logger.bar()
 
 
 class RunRefinementPipelineJobs(object):
 
-    def __init__(self, 
+    def __init__(
+        self,
         pipeline_functions,
         processor,
-        verbose = False,
-        ):
+        verbose=False,
+    ):
 
         self.pipeline_functions = pipeline_functions
         self.processor = processor
         self.verbose = verbose
 
-    def __call__(self, 
+    def __call__(
+        self,
         mtz_list,
         reference_pdb,
-        ):
+    ):
 
         arg_list = []
 
         for pf in self.pipeline_functions:
-
-            arg_list.extend([
-                self.processor.make_wrapper(
-                    func = pf,
-                    in_mtz = m,
-                    in_pdb = reference_pdb,
+            arg_list.extend(
+                [
+                    self.processor.make_wrapper(
+                        func=pf,
+                        in_mtz=m,
+                        in_pdb=reference_pdb,
                     )
-                for m in mtz_list
-                ])
+                    for m in mtz_list
+                ]
+            )
 
         # Control module logging
-        glg = lg.getLogger('giant')
+        glg = lg.getLogger("giant")
 
         prev_propagate_state = glg.propagate
 
         if not self.verbose:
             glg.propagate = False
 
-        try: 
+        try:
 
             results = self.processor(arg_list)
 
-        except Exception as e: 
+        except Exception as e:
 
             glg.propagate = prev_propagate_state
             raise
@@ -236,44 +215,46 @@ class RunRefinementPipelineJobs(object):
 
         return results
 
-    
+
 class RunPrepareMTZJobs(object):
 
-    def __init__(self, 
+    def __init__(
+        self,
         prepare_mtz,
-        processor, 
-        verbose = False,
-        ):
+        processor,
+        verbose=False,
+    ):
 
         self.prepare_mtz = prepare_mtz
         self.processor = processor
         self.verbose = verbose
 
-    def __call__(self,
+    def __call__(
+        self,
         mtz_list,
-        ):
+    ):
 
         arg_list = [
             self.processor.make_wrapper(
-                func = self.prepare_mtz, 
-                in_mtz = m,
-                ) 
+                func=self.prepare_mtz,
+                in_mtz=m,
+            )
             for m in mtz_list
-            ]
+        ]
 
         # Control module logging
-        glg = lg.getLogger('giant')
+        glg = lg.getLogger("giant")
 
         prev_propagate_state = glg.propagate
 
         if not self.verbose:
             glg.propagate = False
 
-        try: 
+        try:
 
             results = self.processor(arg_list)
 
-        except Exception as e: 
+        except Exception as e:
 
             glg.propagate = prev_propagate_state
             raise
@@ -289,104 +270,96 @@ class RunPrepareMTZJobs(object):
 
 ############################################################################
 
+
 def validate_params(params):
-
     if len(params.input.mtz) == 0:
-        raise IOError(
-            'no mtz files supplied (input.mtz=XXX)'
-            )
+        raise IOError("no mtz wrappers supplied (input.mtz=XXX)")
 
-    if (params.input.reference_mtz is not None):
-
+    if params.input.reference_mtz is not None:
         params.input.reference_mtz = pl.Path(params.input.reference_mtz)
 
         assert params.input.reference_mtz.exists()
 
-    if (params.output.output_directory is not None):
+    if params.output.output_directory is not None:
 
         params.output.output_directory = pl.Path(params.output.output_directory)
 
         if not params.output.output_directory.is_dir():
             params.output.output_directory.mkdir(parents=True)
 
-        if (params.output.labelling == 'none') or (not params.output.labelling):
+        if (params.output.labelling == "none") or (not params.output.labelling):
             raise ValueError(
-                'Must provide labelling choice when using output directory (output.labelling=XXX)'
-                )
+                "Must provide labelling choice when using output directory (output.labelling=XXX)"
+            )
 
-    if 'reindex_to_reference' in params.actions:
+    if "reindex_to_reference" in params.actions:
 
-        if (params.input.reference_mtz is None):
-            raise IOError(
-                'no reference mtz supplied (reference_mtz=XXX)'
-                )
+        if params.input.reference_mtz is None:
+            raise IOError("no reference mtz supplied (reference_mtz=XXX)")
 
-    if 'fill_missing_reflections' in params.actions:
+    if "fill_missing_reflections" in params.actions:
 
         if (
-            (params.options.missing_reflections.fill_high is not None) and 
-            (params.options.missing_reflections.fill_low is not None) and
-            (params.options.missing_reflections.fill_high > params.options.missing_reflections.fill_low)
-            ):
+            (params.options.missing_reflections.fill_high is not None)
+            and (params.options.missing_reflections.fill_low is not None)
+            and (
+                params.options.missing_reflections.fill_high
+                > params.options.missing_reflections.fill_low
+            )
+        ):
             raise ValueError(
-                'missing_reflections.fill_high must be less than missing_reflections.fill_low'
-                )
+                "missing_reflections.fill_high must be less than missing_reflections.fill_low"
+            )
 
-    if 'transfer_rfree_flags' in params.actions:
+    if "transfer_rfree_flags" in params.actions:
 
-        if (params.input.reference_mtz is None):
-            raise IOError(
-                'no reference mtz supplied (reference_mtz=XXX)'
-                )
+        if params.input.reference_mtz is None:
+            raise IOError("no reference mtz supplied (reference_mtz=XXX)")
 
-        if (params.options.rfree_flag.input is None):
-            raise ValueError(
-                'R-free flag must be specified (rfree_flag.input=XXX)'
-                )
+        if params.options.rfree_flag.input is None:
+            raise ValueError("R-free flag must be specified (rfree_flag.input=XXX)")
 
-        if (params.options.rfree_flag.output is None):
+        if params.options.rfree_flag.output is None:
             params.options.rfree_flag.output = params.options.rfree_flag.input
 
-    if 'refinement_pipeline' in params.actions:
+    if "refinement_pipeline" in params.actions:
 
         if params.input.reference_pdb is None:
             raise IOError(
-                'must provide reference_pdb to run refinement_pipeline (reference_pdb=XXX)'
-                )
+                "must provide reference_pdb to run refinement_pipeline (reference_pdb=XXX)"
+            )
 
         if params.input.reference_mtz is None:
             raise IOError(
-                'must provide reference_mtz to run refinement_pipeline (reference_mtz=XXX)'
-                )
+                "must provide reference_mtz to run refinement_pipeline (reference_mtz=XXX)"
+            )
 
         # hack alert
         if params.options.refinement.pipedream.reference_mtz is None:
             params.options.refinement.pipedream.reference_mtz = (
                 params.input.reference_mtz
-                )
+            )
+
 
 def run(params):
-
-    logpath = pl.Path(
-        params.output.output_log
-        )
+    logpath = pl.Path(params.output.output_log)
 
     logger = lg.setup_logging(
-        name = __name__,
-        log_file = str(logpath),
+        name=__name__,
+        log_file=str(logpath),
     )
 
     log_running_parameters(
-        params = params,
-        master_phil = master_phil,
-        logger = logger,
+        params=params,
+        master_phil=master_phil,
+        logger=logger,
     )
 
     validate_params(params)
-    
+
     pipeline_options = {
-        'dimple' : params.options.refinement.dimple,
-        'pipedream' : params.options.refinement.pipedream,
+        "dimple": params.options.refinement.dimple,
+        "pipedream": params.options.refinement.pipedream,
     }
 
     #################
@@ -394,122 +367,104 @@ def run(params):
     # setup
 
     path_labeller = PathLabeller(
-        method = params.output.labelling,
-        )
+        method=params.output.labelling,
+    )
 
     processor = ProcessorJoblib(
-        n_cpus = params.settings.cpus,
-        )
+        n_cpus=params.settings.cpus,
+    )
 
     prepare_mtzs = RunPrepareMTZJobs(
-        prepare_mtz = PrepareMTZTask(
-            remove_columns = (
+        prepare_mtz=PrepareMTZTask(
+            remove_columns=(
                 RemoveColumns(
-                    columns_to_remove = params.options.remove_columns.columns,
-                    )
-                if ('remove_columns' in params.actions)
-                else 
-                None
-                ),
-            reindex_to_reference = (
-                ReindexMtzToReference(
-                    reference_mtz = params.input.reference_mtz,
-                    tolerance = params.options.reindex.tolerance,
-                    )
-                if ('reindex_to_reference' in params.actions)
-                else
-                None
-                ),
-            fill_missing_reflections = (
-                FillMissingReflections(
-                    fill_resolution_low = params.options.missing_reflections.fill_low,
-                    fill_resolution_high = params.options.missing_reflections.fill_high,
-                    delete_tmp_files = (not params.output.keep_intermediate_files),
-                    )
-                if ('fill_missing_reflections' in params.actions)
-                else 
-                None
-                ),
-            transfer_rfree_flags = (
-                TransferRFreeFlags(
-                    reference_mtz = params.input.reference_mtz,
-                    input_free_r_flag  = params.options.rfree_flag.input,
-                    output_free_r_flag = params.options.rfree_flag.output,
-                    delete_tmp_files = (not params.output.keep_intermediate_files),
-                    )
-                if ('transfer_rfree_flags' in params.actions)
-                else
-                None
-                ),
-            output_directory = (
-                params.output.output_directory
-                ),
-            path_labeller = (
-                path_labeller
-                ),
-            delete_tmp_files = (
-                not params.output.keep_intermediate_files
-                ),
+                    columns_to_remove=params.options.remove_columns.columns,
+                )
+                if ("remove_columns" in params.actions)
+                else None
             ),
-        processor = processor, 
-        verbose = params.settings.verbose,
-        )
+            reindex_to_reference=(
+                ReindexMtzToReference(
+                    reference_mtz=params.input.reference_mtz,
+                    tolerance=params.options.reindex.tolerance,
+                )
+                if ("reindex_to_reference" in params.actions)
+                else None
+            ),
+            fill_missing_reflections=(
+                FillMissingReflections(
+                    fill_resolution_low=params.options.missing_reflections.fill_low,
+                    fill_resolution_high=params.options.missing_reflections.fill_high,
+                    delete_tmp_files=(not params.output.keep_intermediate_files),
+                )
+                if ("fill_missing_reflections" in params.actions)
+                else None
+            ),
+            transfer_rfree_flags=(
+                TransferRFreeFlags(
+                    reference_mtz=params.input.reference_mtz,
+                    input_free_r_flag=params.options.rfree_flag.input,
+                    output_free_r_flag=params.options.rfree_flag.output,
+                    delete_tmp_files=(not params.output.keep_intermediate_files),
+                )
+                if ("transfer_rfree_flags" in params.actions)
+                else None
+            ),
+            output_directory=(params.output.output_directory),
+            path_labeller=(path_labeller),
+            delete_tmp_files=(not params.output.keep_intermediate_files),
+        ),
+        processor=processor,
+        verbose=params.settings.verbose,
+    )
 
     run_refinement_pipelines = (
         RunRefinementPipelineJobs(
-            pipeline_functions = [
+            pipeline_functions=[
                 RefinementPipelineTask(
-                    program = p,
-                    program_options = pipeline_options[p],
-                    output_directory = (
-                        None #params.output.output_directory
-                        ),
-                    path_labeller = (
-                        path_labeller
-                        ),
-                    )
+                    program=p,
+                    program_options=pipeline_options[p],
+                    output_directory=(None),  # params.output.output_directory
+                    path_labeller=(path_labeller),
+                )
                 for p in params.options.refinement.pipelines
-                ],
-            processor = processor,
-            verbose = params.settings.verbose,
-            )
-        if 
-        ('refinement_pipeline' in params.actions)
-        else 
-        None
+            ],
+            processor=processor,
+            verbose=params.settings.verbose,
         )
+        if ("refinement_pipeline" in params.actions)
+        else None
+    )
 
     # run
 
-    logger.heading('Preparing MTZs')
+    logger.heading("Preparing MTZs")
 
     prepared_mtzs = prepare_mtzs(
-        mtz_list = params.input.mtz,
-        )
+        mtz_list=params.input.mtz,
+    )
 
-    if run_refinement_pipelines is not None: 
-
-        logger.heading('Running refinement pipelines')
+    if run_refinement_pipelines is not None:
+        logger.heading("Running refinement pipelines")
 
         run_refinement_pipelines(
-            reference_pdb = params.input.reference_pdb,
-            mtz_list = [
-                p.output.output_mtz 
-                for p in prepared_mtzs
-                if 
-                (p.status.success is True)
-                ],
-            ) 
+            reference_pdb=params.input.reference_pdb,
+            mtz_list=[
+                p.output.output_mtz for p in prepared_mtzs if (p.status.success is True)
+            ],
+        )
 
-############################################################################
+    ############################################################################
 
-if __name__=='__main__':
+
+if __name__ == "__main__":
     from giant.jiffies import run_default
+
     run_default(
-        run                 = run,
-        master_phil         = master_phil,
-        args                = sys.argv[1:],
-        blank_arg_prepend   = blank_arg_prepend,
-        program             = PROGRAM,
-        description         = DESCRIPTION,
+        run=run,
+        master_phil=master_phil,
+        args=sys.argv[1:],
+        blank_arg_prepend=blank_arg_prepend,
+        program=PROGRAM,
+        description=DESCRIPTION,
     )

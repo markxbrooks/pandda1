@@ -1,11 +1,11 @@
 import os
 
-import scipy, numpy
-
+import iotbx.pdb
+import numpy
+import scipy
+from cctbx import crystal, sgtbx
 from scitbx.array_family import flex
 
-import iotbx.pdb
-from cctbx import crystal, sgtbx
 
 def match_sites_by_symmetry(ref_sites, query_sites, unit_cell, space_group, cutoff=5):
     """Pair sites in query_sites to sites in ref_sites, allowing for symmetry"""
@@ -14,23 +14,28 @@ def match_sites_by_symmetry(ref_sites, query_sites, unit_cell, space_group, cuto
 
     for i_ref, ref in enumerate(ref_sites):
         ref_frac = unit_cell.fractionalize(ref)
-        sym_sites_ref = sgtbx.sym_equiv_sites(space_group   = space_group,
-                                              unit_cell     = unit_cell,
-                                              original_site = ref_frac  )
+        sym_sites_ref = sgtbx.sym_equiv_sites(
+            space_group=space_group, unit_cell=unit_cell, original_site=ref_frac
+        )
 
         for i_query, query in enumerate(query_sites):
             query_frac = unit_cell.fractionalize(query)
-            min_dist = sgtbx.min_sym_equiv_distance_info(sym_sites_ref, query_frac).dist()
+            min_dist = sgtbx.min_sym_equiv_distance_info(
+                sym_sites_ref, query_frac
+            ).dist()
             if min_dist < cutoff:
                 pairings[i_ref, i_query] = 1
 
     return pairings
 
+
 def combine_hierarchies(list_of_hierarchies):
     """Combine a list of hierarchies into one hierarchy -- Requires all of the chain identifiers to be unique"""
     top_h = list_of_hierarchies[0].deep_copy()
-    for next_h in list_of_hierarchies[1:]: top_h.transfer_chains_from_other(next_h.deep_copy())
+    for next_h in list_of_hierarchies[1:]:
+        top_h.transfer_chains_from_other(next_h.deep_copy())
     return top_h
+
 
 def find_symmetry_equivalent_groups(points_frac, sym_ops, unit_cell, cutoff_cart):
     """Group sets of points by minimum distance between points, allowing for symmetry"""
@@ -38,7 +43,9 @@ def find_symmetry_equivalent_groups(points_frac, sym_ops, unit_cell, cutoff_cart
     # Pre-calculate the square distance
     dist_cut_sq = cutoff_cart**2
     # Matrix for whether they are near to each other
-    equiv_sites = numpy.zeros([len(sym_ops), len(points_frac), len(points_frac)], dtype=int)
+    equiv_sites = numpy.zeros(
+        [len(sym_ops), len(points_frac), len(points_frac)], dtype=int
+    )
 
     # Apply the symmetry operations to each group to see if it is near to other groups
     for i_sym_op, sym_op in enumerate(sym_ops):
@@ -68,9 +75,11 @@ def find_symmetry_equivalent_groups(points_frac, sym_ops, unit_cell, cutoff_cart
 
     # Condense the cluster equivalence - take max over the symmetry operations and group by connected paths
     from giant.common.clustering import find_connected_groups
+
     sym_groups = find_connected_groups(connection_matrix=equiv_sites.max(axis=0))
 
     return sym_groups
+
 
 def get_crystal_contact_operators(hierarchy, crystal_symmetry, distance_cutoff):
     """Use an alternate method to identify the symmetry operations required to generate crystal contacts"""
@@ -89,20 +98,23 @@ def get_crystal_contact_operators(hierarchy, crystal_symmetry, distance_cutoff):
     assert len(struc.scatterers()) == len(mappings)
 
     # Get all atom pairs within distance_cutoff distance
-    pair_generator = crystal.neighbors_fast_pair_generator(asu_mappings, distance_cutoff=distance_cutoff)
+    pair_generator = crystal.neighbors_fast_pair_generator(
+        asu_mappings, distance_cutoff=distance_cutoff
+    )
     sym_operations = []
     for pair in pair_generator:
-      # obtain rt_mx_ji - symmetry operator that should be applied to j-th atom
-      # to transfer it to i-th atom
-      rt_mx_i = asu_mappings.get_rt_mx_i(pair)
-      rt_mx_j = asu_mappings.get_rt_mx_j(pair)
-      rt_mx_ji = rt_mx_i.inverse().multiply(rt_mx_j)
-      # if it is not a unit matrix, that is symmetry related pair of atoms
-      if not rt_mx_ji.is_unit_mx():
-        if rt_mx_ji not in sym_operations:
-          sym_operations.append(rt_mx_ji)
+        # obtain rt_mx_ji - symmetry operator that should be applied to j-th atom
+        # to transfer it to i-th atom
+        rt_mx_i = asu_mappings.get_rt_mx_i(pair)
+        rt_mx_j = asu_mappings.get_rt_mx_j(pair)
+        rt_mx_ji = rt_mx_i.inverse().multiply(rt_mx_j)
+        # if it is not a unit matrix, that is symmetry related pair of atoms
+        if not rt_mx_ji.is_unit_mx():
+            if rt_mx_ji not in sym_operations:
+                sym_operations.append(rt_mx_ji)
 
     return sym_operations
+
 
 def apply_symmetry_operators(hierarchy, crystal_symmetry, sym_ops_mat):
     """Take a list of symmetry operations and apply them to hierarchy"""
@@ -114,11 +126,17 @@ def apply_symmetry_operators(hierarchy, crystal_symmetry, sym_ops_mat):
     # Already existing chain ids
     chains = [c.id for c in hierarchy.chains()]
     # Number of new chains needed - one for each reference chain for each symmetry operation
-    num_new_chains = len(chains)*len(sym_ops_mat)
+    num_new_chains = len(chains) * len(sym_ops_mat)
     # Select the new chains, ignoring the ones already in the reference
-    new_chain_ids = [c for c in iotbx.pdb.systematic_chain_ids()[0:(num_new_chains+len(chains))] if c not in chains][0:num_new_chains]
+    new_chain_ids = [
+        c
+        for c in iotbx.pdb.systematic_chain_ids()[0 : (num_new_chains + len(chains))]
+        if c not in chains
+    ][0:num_new_chains]
 
-    assert not [c for c in new_chain_ids if c in chains], 'GENERATED CHAIN IDS ARE NOT UNIQUE'
+    assert not [
+        c for c in new_chain_ids if c in chains
+    ], "GENERATED CHAIN IDS ARE NOT UNIQUE"
 
     # Create combinations of the different symmetry operations and the reference chains and map them to new chain ids
     sym_op_chain_combinations = []
@@ -158,9 +176,16 @@ def apply_symmetry_operators(hierarchy, crystal_symmetry, sym_ops_mat):
 
     return sym_hierarchies, chain_mappings
 
+
 def generate_crystal_contacts(hierarchy, crystal_symmetry, distance_cutoff=10):
     """Find symmetry copies of the protein in contact with the asu and generate these copies"""
 
-    sym_ops_mat = get_crystal_contact_operators(hierarchy=hierarchy,crystal_symmetry=crystal_symmetry, distance_cutoff=distance_cutoff)
-    sym_hierarchies, chain_mappings = apply_symmetry_operators(hierarchy=hierarchy,crystal_symmetry=crystal_symmetry,sym_ops_mat=sym_ops_mat)
+    sym_ops_mat = get_crystal_contact_operators(
+        hierarchy=hierarchy,
+        crystal_symmetry=crystal_symmetry,
+        distance_cutoff=distance_cutoff,
+    )
+    sym_hierarchies, chain_mappings = apply_symmetry_operators(
+        hierarchy=hierarchy, crystal_symmetry=crystal_symmetry, sym_ops_mat=sym_ops_mat
+    )
     return sym_ops_mat, sym_hierarchies, chain_mappings

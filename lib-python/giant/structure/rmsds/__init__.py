@@ -1,8 +1,2 @@
-
-from .atoms import (
-    CalculatePairedAtomSetsRMSD,
-    )
-
-from .conformers import (
-    CalculatePairedConformerSetsRMSDs,
-    )
+from .atoms import CalculatePairedAtomSetsRMSD
+from .conformers import CalculatePairedConformerSetsRMSDs

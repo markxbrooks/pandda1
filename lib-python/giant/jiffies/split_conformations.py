@@ -1,27 +1,23 @@
-import giant.logs as lg
-logger = lg.getLogger(__name__)
-
-import os, sys, copy
+import copy
+import os
 import pathlib as pl
+import sys
 
-from giant.phil import (
-    log_running_parameters,
-    )
-
-from giant.mulch.dataset import (
-    AtomicModel,
-    )
-
+import giant.logs as lg
+from giant.mulch.dataset import AtomicModel
+from giant.phil import log_running_parameters
 from giant.structure.conformers import (
     SplitHierarchyByConformer,
     SplitHierarchyByConformerGroup,
     SplitHierarchyByResidueNames,
     SplitMultiStateModel,
-    )
+)
+
+logger = lg.getLogger(__name__)
 
 ############################################################################
 
-PROGRAM = 'giant.split_conformations'
+PROGRAM = "giant.split_conformations"
 
 DESCRIPTION = """
     A tool to split a multi-conformer model into its component states.
@@ -35,11 +31,13 @@ DESCRIPTION = """
 ############################################################################
 
 blank_arg_prepend = {
-    '.pdb':'input.pdb=',
+    ".pdb": "input.pdb=",
 }
 
-import libtbx.phil
-master_phil = libtbx.phil.parse("""
+import libtbx.phil  # noqa: E402
+
+master_phil = libtbx.phil.parse(
+    """
 input  {
     pdb = None
         .help = 'A model containing multiple states/conformations (for example unbound and bound states)'
@@ -110,7 +108,9 @@ settings {
         .type = bool
 }
 
-""")
+"""
+)
+
 
 def set_get_log(params):
 
@@ -119,65 +119,67 @@ def set_get_log(params):
     elif len(params.input.pdb) == 1:
         params.output.log = str(
             pl.Path(params.input.pdb[0]).with_name(
-                pl.Path(params.input.pdb[0]).stem+'-split_conformations.log'
-                )
+                pl.Path(params.input.pdb[0]).stem + "-split_conformations.log"
             )
+        )
     else:
         params.output.log = "split_conformations.log"
 
     return params.output.log
 
+
 def validate_params(params):
 
     if not params.input.pdb:
-        raise IOError('No PDB files given')
+        raise IOError("No PDB wrappers given")
 
     for p in params.input.pdb:
         if not pl.Path(p).exists():
-            raise IOError('PDB file {} does not exist'.format(p))
+            raise IOError("PDB file {} does not exist".format(p))
+
 
 def build_splitter(options):
 
-    if options.mode == 'by_residue_name':
+    if options.mode == "by_residue_name":
 
         opt = options.by_residue_name
 
         split_hierarchy = SplitHierarchyByResidueNames(
-            ignore_common_molecules = opt.ignore_common_molecules,
-            include_resnames_list = opt.include_resname,
-            ignore_resnames_list = opt.ignore_resname,
-            selected_name = opt.selected_name,
-            unselected_name = opt.unselected_name,
-            atom_selection = opt.atom_selection,
-            combine_split_states = opt.combine_bound_states,
-            )
+            ignore_common_molecules=opt.ignore_common_molecules,
+            include_resnames_list=opt.include_resname,
+            ignore_resnames_list=opt.ignore_resname,
+            selected_name=opt.selected_name,
+            unselected_name=opt.unselected_name,
+            atom_selection=opt.atom_selection,
+            combine_split_states=opt.combine_bound_states,
+        )
 
-    elif options.mode == 'by_conformer':
+    elif options.mode == "by_conformer":
 
         split_hierarchy = SplitHierarchyByConformer()
 
-    elif options.mode == 'by_conformer_group':
+    elif options.mode == "by_conformer_group":
 
         opt = options.by_conformer_group
 
         split_hierarchy = SplitHierarchyByConformerGroup(
-            conformer_id_sets = opt.conformers,
-            )
+            conformer_id_sets=opt.conformers,
+        )
 
     else:
 
         raise NotImplementedError()
 
     split_states = SplitMultiStateModel(
-        split_hierarchy = split_hierarchy,
-        prune_duplicates_rmsd = (
+        split_hierarchy=split_hierarchy,
+        prune_duplicates_rmsd=(
             options.pruning.prune_duplicates_rmsd
             if options.pruning.prune_duplicates is True
             else None
-            ),
-        reset_altlocs = options.reset_altlocs,
-        reset_occupancies = options.rescale_occupancies,
-        )
+        ),
+        reset_altlocs=options.reset_altlocs,
+        reset_occupancies=options.rescale_occupancies,
+    )
 
     return split_states
 
@@ -189,96 +191,81 @@ class WriteStructures(object):
         self.overwrite = bool(overwrite)
 
         self.filepath_append = (
-            str(filepath_append)
-            if filepath_append is not None
-            else None
-            )
+            str(filepath_append) if filepath_append is not None else None
+        )
 
     def __call__(self, model, hierarchy_dict, output_path_root):
 
-        stem = (
-            output_path_root.stem
-            )
+        stem = output_path_root.stem
 
         if self.filepath_append is not None:
-            stem = (
-                stem + str(self.filepath_append)
-                )
+            stem = stem + str(self.filepath_append)
 
         filepaths = {
-            k : output_path_root.with_name(
-                stem + '-' + k
-                ).with_suffix(
-                '.pdb'
-                )
+            k: output_path_root.with_name(stem + "-" + k).with_suffix(".pdb")
             for k in list(hierarchy_dict.keys())
-            }
+        }
 
-        if (self.overwrite is False):
+        if self.overwrite is False:
 
             for k, p in list(filepaths.items()):
 
                 if p.exists():
-                    raise IOError(
-                        'Output file already exists: {}'.format(
-                            str(p)
-                            )
-                        )
+                    raise IOError("Output file already exists: {}".format(str(p)))
 
         for k, h in sorted(hierarchy_dict.items()):
 
             p = filepaths[k]
 
             logger(
-                'Writing {k} to {p}'.format(
-                    k = k,
-                    p = str(p),
-                    )
+                "Writing {k} to {p}".format(
+                    k=k,
+                    p=str(p),
                 )
+            )
 
             h.write_pdb_file(
-                file_name = str(p),
-                crystal_symmetry = (
-                    model.input.crystal_symmetry()
-                    ),
-                )
+                file_name=str(p),
+                crystal_symmetry=(model.input.crystal_symmetry()),
+            )
+
 
 def run(params):
 
     logger = lg.setup_logging(
-        name = __name__,
-        log_file = set_get_log(params),
-        debug = params.settings.verbose,
-        )
+        name=__name__,
+        log_file=set_get_log(params),
+        debug=params.settings.verbose,
+    )
 
     log_running_parameters(
-            params = params,
-            master_phil = master_phil,
-            logger = logger,
-        )
+        params=params,
+        master_phil=master_phil,
+        logger=logger,
+    )
 
     validate_params(params)
 
     #####
 
     split_states = build_splitter(
-        options = params.options,
-        )
+        options=params.options,
+    )
 
     write_structures = WriteStructures(
-        filepath_append = str(params.output.suffix_prefix),
-        overwrite = bool(params.settings.overwrite),
-        )
+        filepath_append=str(params.output.suffix_prefix),
+        overwrite=bool(params.settings.overwrite),
+    )
 
     #####
 
     input_pdbs = list(params.input.pdb)
 
-    logger.heading('Processing structures')
+    logger.heading("Processing structures")
 
     for pdb_path in input_pdbs:
 
-        logger.subheading('Splitting {}'.format(str(pdb_path)))
+        logger.subheading("Splitting {}".format(str(pdb_path)))
 
         pdb_path = pl.Path(pdb_path)
 
@@ -286,28 +273,28 @@ def run(params):
         model.hierarchy.sort_atoms_in_place()
 
         split_dict = split_states(
-            hierarchy = model.hierarchy,
-            )
+            hierarchy=model.hierarchy,
+        )
 
         write_structures(
-            model = model,
-            hierarchy_dict = split_dict,
-            output_path_root = (
-                pdb_path.with_name(pdb_path.stem)
-                ),
-            )
+            model=model,
+            hierarchy_dict=split_dict,
+            output_path_root=(pdb_path.with_name(pdb_path.stem)),
+        )
 
-    logger.heading('split_conformations finished normally')
+    logger.heading("split_conformations finished normally")
+
 
 ############################################################################
 
-if __name__=='__main__':
+if __name__ == "__main__":
     from giant.jiffies import run_default
+
     run_default(
-        run                 = run,
-        master_phil         = master_phil,
-        args                = sys.argv[1:],
-        blank_arg_prepend   = blank_arg_prepend,
-        program             = PROGRAM,
-        description         = DESCRIPTION,
+        run=run,
+        master_phil=master_phil,
+        args=sys.argv[1:],
+        blank_arg_prepend=blank_arg_prepend,
+        program=PROGRAM,
+        description=DESCRIPTION,
     )

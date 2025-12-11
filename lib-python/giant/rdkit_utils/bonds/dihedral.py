@@ -1,7 +1,8 @@
 import math
-from rdkit import Chem
 
 from bamboo.rdkit_utils.bonds.rotate import identify_rotatable_bond_atom_pairs
+from rdkit import Chem
+
 
 def calculate_dihedral_angle_differences(mol1, mol2):
     """Calculates the dihedral angle differences between rotatable bonds of mol1 and mol2"""
@@ -16,20 +17,35 @@ def calculate_dihedral_angle_differences(mol1, mol2):
         mol1_dihedrals = calculate_dihedral_angles(mol1, mol1_atom_set)
         mol2_dihedrals = calculate_dihedral_angles(mol2, mol2_atom_set)
         # Calculate the differences squared for each angle difference
-        diffs = [an1-an2 for an1, an2 in zip(mol1_dihedrals,mol2_dihedrals)]
+        diffs = [an1 - an2 for an1, an2 in zip(mol1_dihedrals, mol2_dihedrals)]
         # Append list of angle differences
         differences.append(diffs)
 
     return atom_sets, differences
+
 
 def calculate_dihedral_atom_equivalences(mol1, mol2):
     """Gets the list that are paired in mol1 and mol2"""
 
     # Check that the mols are identical-ish
     if mol1.GetNumHeavyAtoms() != mol2.GetNumHeavyAtoms():
-        raise EqualityError('Molecules are not identical (Num Atoms) {!s} != {!s}.\n{!s}\n{!s}'.format(mol1.GetNumHeavyAtoms(),mol2.GetNumHeavyAtoms(),Chem.MolToSmiles(mol1),Chem.MolToSmiles(mol2)))
+        raise EqualityError(
+            "Molecules are not identical (Num Atoms) {!s} != {!s}.\n{!s}\n{!s}".format(
+                mol1.GetNumHeavyAtoms(),
+                mol2.GetNumHeavyAtoms(),
+                Chem.MolToSmiles(mol1),
+                Chem.MolToSmiles(mol2),
+            )
+        )
     if mol1.GetNumBonds() != mol2.GetNumBonds():
-        raise EqualityError('Molecules are not identical (Num Bonds) {!s} != {!s}:\n{!s}\n{!s}'.format(mol1.GetNumBonds(),mol2.GetNumBonds(),Chem.MolToSmiles(mol1), Chem.MolToSmiles(mol2)))
+        raise EqualityError(
+            "Molecules are not identical (Num Bonds) {!s} != {!s}:\n{!s}\n{!s}".format(
+                mol1.GetNumBonds(),
+                mol2.GetNumBonds(),
+                Chem.MolToSmiles(mol1),
+                Chem.MolToSmiles(mol2),
+            )
+        )
 
     # Gets a list of lists of atoms in mol1 (12,16,3, ...) that match the atoms in mol2 (1,2,3, ...)
     match_patterns = mol1.GetSubstructMatches(mol2, uniquify=False)
@@ -41,17 +57,28 @@ def calculate_dihedral_atom_equivalences(mol1, mol2):
     # Iterate through the different ways of overlaying the molecule (ensures we get the minimum rmsd)
     for match_pattern in match_patterns:
         # Translate from the atoms in mol1 to the atoms in mol2 (for this match_pattern)
-        trans_dict = dict(zip(match_pattern, range(0,num_atms)))
+        trans_dict = dict(zip(match_pattern, range(0, num_atms)))
         # Translate the atoms in mol1 to the atoms in mol2
-        mol2_atom_sets = [ tuple([trans_dict[atm] for atm in bond_set]) for bond_set in mol1_atom_sets]
+        mol2_atom_sets = [
+            tuple([trans_dict[atm] for atm in bond_set]) for bond_set in mol1_atom_sets
+        ]
         # Add to list
         paired_atom_sets.append((mol1_atom_sets, mol2_atom_sets))
         # Check that the atom types are identical (test)
-        mol1_atom_types = [ tuple([mol1.GetAtomWithIdx(atm).GetAtomicNum() for atm in bond_set]) for bond_set in mol1_atom_sets]
-        mol2_atom_types = [ tuple([mol2.GetAtomWithIdx(atm).GetAtomicNum() for atm in bond_set]) for bond_set in mol2_atom_sets]
-        assert mol1_atom_types == mol2_atom_types, "ATOM TYPES ARE NOT THE SAME ON THE DIHEDRAL ANGLE TO BE CALCULATED - THERE'S BEEN A MATCHING ERROR"
+        mol1_atom_types = [
+            tuple([mol1.GetAtomWithIdx(atm).GetAtomicNum() for atm in bond_set])
+            for bond_set in mol1_atom_sets
+        ]
+        mol2_atom_types = [
+            tuple([mol2.GetAtomWithIdx(atm).GetAtomicNum() for atm in bond_set])
+            for bond_set in mol2_atom_sets
+        ]
+        assert (
+            mol1_atom_types == mol2_atom_types
+        ), "ATOM TYPES ARE NOT THE SAME ON THE DIHEDRAL ANGLE TO BE CALCULATED - THERE'S BEEN A MATCHING ERROR"
     # Return the list of lists of paired atoms between the structures
     return paired_atom_sets
+
 
 def calculate_dihedral_angles(mol, dihedral_atom_sets):
     """find the dihedral angles of rotatable bonds in a molecule"""
@@ -80,7 +107,6 @@ def calculate_dihedral_angles(mol, dihedral_atom_sets):
         # Calculate dot-product and then inverse cosine to get the angle
         dot_prod = cross12.DotProduct(cross23)
         dihedral_rad = math.acos(dot_prod)
-        dihedral_deg = 180.0*dihedral_rad/math.pi
+        dihedral_deg = 180.0 * dihedral_rad / math.pi
         dihedral_angles.append(dihedral_deg)
     return dihedral_angles
-

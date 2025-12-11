@@ -1,45 +1,31 @@
-import giant.logs as lg
-logger = lg.getLogger(__name__)
-
-import os, sys
+import os
 import pathlib as pl
+import sys
 
-from giant.phil import (
-    log_running_parameters,
-    )
-
-from giant.mulch.dataset import (
-    AtomicModel,
-    )
-
+import giant.logs as lg
+from giant.mulch.dataset import AtomicModel
+from giant.phil import log_running_parameters
+from giant.refinement.restraints import DummyRestraintMaker
+from giant.refinement.restraints.format import WriteRestraints
 from giant.refinement.restraints.multi_state import (
+    MakeDuplicateConformerRestraints,
+    MakeIntraConformerRestraints,
+    MakeMultiStateOccupancyRestraints,
     MakeMultiStateRestraints,
     MakeSimpleOccupancyRestraints,
-    MakeMultiStateOccupancyRestraints,
-    MakeIntraConformerRestraints,
-    MakeDuplicateConformerRestraints,
-    )
+)
+from giant.refinement.restraints.to_pymol import WriteRestraintsPymolScript
 
-from giant.refinement.restraints.format import (
-    WriteRestraints,
-    )
-
-from giant.refinement.restraints.to_pymol import (
-    WriteRestraintsPymolScript,
-    )
-
-from giant.refinement.restraints import (
-    DummyRestraintMaker,
-    )
+logger = lg.getLogger(__name__)
 
 ############################################################################
 
-PROGRAM = 'giant.make_restraints'
+PROGRAM = "giant.make_restraints"
 
 DESCRIPTION = """
     A tool to simplify the generation of restraints for use during refinement with REFMAC or PHENIX.
 
-    The output ".params" files may be passed to giant.quick_refine for use in refinement.
+    The output ".params" wrappers may be passed to giant.quick_refine for use in refinement.
 
     1) Simple usage:
         > giant.make_restraints input.pdb
@@ -51,7 +37,7 @@ DESCRIPTION = """
 ############################################################################
 
 blank_arg_prepend = {
-    '.pdb' : 'pdb=',
+    ".pdb": "pdb=",
 }
 
 input_phil = """
@@ -146,8 +132,10 @@ multi_state_occupancy_groups {
 }
 """
 
-import libtbx.phil
-master_phil = libtbx.phil.parse("""
+import libtbx.phil  # noqa: E402
+
+master_phil = libtbx.phil.parse(
+    """
 input {{input_phil}}
 output {{output_phil}}
 options {{options_phil}}
@@ -158,41 +146,45 @@ settings {
         .type = bool
 }
 """.replace(
-    '{input_phil}',
-    input_phil,
-).replace(
-    '{output_phil}',
-    output_phil,
-).replace(
-    '{options_phil}',
-    options_phil,
-))
+        "{input_phil}",
+        input_phil,
+    )
+    .replace(
+        "{output_phil}",
+        output_phil,
+    )
+    .replace(
+        "{options_phil}",
+        options_phil,
+    )
+)
+
 
 def set_get_log(params):
 
     if params.output.log is not None:
         pass
     elif params.output.output_root is not None:
-        params.output.log = str(
-            pl.Path(params.output.output_root).with_suffix('.log')
-            )
+        params.output.log = str(pl.Path(params.output.output_root).with_suffix(".log"))
     else:
         # set some sensible default
         params.output.log = "restraints.log"
 
     return params.output.log
 
+
 def validate_params(params):
 
     if not params.input.pdb:
-        raise IOError('No PDB File Provided')
+        raise IOError("No PDB File Provided")
 
     if not pl.Path(params.input.pdb).exists():
         raise IOError(
-            'File does not exist: {p}'.format(
-                p = params.input.pdb,
-                )
+            "File does not exist: {p}".format(
+                p=params.input.pdb,
             )
+        )
+
 
 def build_restraints_maker(options):
 
@@ -204,80 +196,79 @@ def build_restraints_maker(options):
     modes = options.modes
     exclude_hydrogens = options.exclude_hydrogens
 
-    make_intra_conformer_restraints_all = DummyRestraintMaker(name='< step skipped >')
+    make_intra_conformer_restraints_all = DummyRestraintMaker(name="< step skipped >")
     make_intra_conformer_restraints_occ = None
 
-    if 'local_altloc_restraints' in modes:
+    if "local_altloc_restraints" in modes:
 
         make_intra_conformer_restraints = MakeIntraConformerRestraints(
-            min_distance_cutoff = lar.min_distance,
-            max_distance_cutoff = lar.max_distance,
-            distance_restraint_sigma = lar.sigma_xyz,
-            select_altlocs = lar.altloc_selection,
-            atom_selection = lar.atom_selection,
-            exclude_hydrogens = exclude_hydrogens,
-            )
+            min_distance_cutoff=lar.min_distance,
+            max_distance_cutoff=lar.max_distance,
+            distance_restraint_sigma=lar.sigma_xyz,
+            select_altlocs=lar.altloc_selection,
+            atom_selection=lar.atom_selection,
+            exclude_hydrogens=exclude_hydrogens,
+        )
 
-        if lar.selection == 'all':
+        if lar.selection == "all":
             make_intra_conformer_restraints_all = make_intra_conformer_restraints
-        elif lar.selection == 'multi_state_occupancy_groups':
+        elif lar.selection == "multi_state_occupancy_groups":
             make_intra_conformer_restraints_occ = make_intra_conformer_restraints
         else:
             raise NotImplementedError()
 
     maker = MakeMultiStateRestraints(
-        make_multi_state_occupancy_restraints = (
+        make_multi_state_occupancy_restraints=(
             MakeMultiStateOccupancyRestraints(
-                group_distance_cutoff = msog.group_dist,
-                overlap_distance_cutoff = msog.overlap_dist,
-                ignore_common_molecules = msog.ignore_common_molecules,
-                include_resnames_list = msog.include_resname,
-                ignore_resnames_list = msog.ignore_resname,
-                set_group_completeness_to = msog.set_group_completeness_to,
-                atom_selection = msog.atom_selection,
-                make_intra_conformer_distance_restraints = make_intra_conformer_restraints_occ,
-                )
-            if ('multi_state_occupancy_groups' in modes)
-            else DummyRestraintMaker(name='< step skipped >')
-            ),
-        make_intra_conformer_restraints = (
-            make_intra_conformer_restraints_all
-            ),
-        make_duplicate_conformer_restraints = (
+                group_distance_cutoff=msog.group_dist,
+                overlap_distance_cutoff=msog.overlap_dist,
+                ignore_common_molecules=msog.ignore_common_molecules,
+                include_resnames_list=msog.include_resname,
+                ignore_resnames_list=msog.ignore_resname,
+                set_group_completeness_to=msog.set_group_completeness_to,
+                atom_selection=msog.atom_selection,
+                make_intra_conformer_distance_restraints=make_intra_conformer_restraints_occ,
+            )
+            if ("multi_state_occupancy_groups" in modes)
+            else DummyRestraintMaker(name="< step skipped >")
+        ),
+        make_intra_conformer_restraints=(make_intra_conformer_restraints_all),
+        make_duplicate_conformer_restraints=(
             MakeDuplicateConformerRestraints(
-                rmsd_cutoff = dar.rmsd_cutoff,
-                distance_restraint_sigma = dar.sigma_xyz,
-                atom_selection = dar.atom_selection,
-                exclude_hydrogens = exclude_hydrogens,
-                )
-            if ('duplicated_atom_restraints' in modes)
-            else DummyRestraintMaker(name='< step skipped >')
-            ),
-        make_simple_occupancy_restraints = (
+                rmsd_cutoff=dar.rmsd_cutoff,
+                distance_restraint_sigma=dar.sigma_xyz,
+                atom_selection=dar.atom_selection,
+                exclude_hydrogens=exclude_hydrogens,
+            )
+            if ("duplicated_atom_restraints" in modes)
+            else DummyRestraintMaker(name="< step skipped >")
+        ),
+        make_simple_occupancy_restraints=(
             MakeSimpleOccupancyRestraints(
-                single_atom_groups = sog.single_atom_groups,
-                single_conformer_groups = sog.single_conformer_groups,
-                atom_selection = sog.atom_selection,
-                )
-            if ('simple_occupancy_groups' in modes)
-            else DummyRestraintMaker(name='< step skipped >')
-            ),
-        )
+                single_atom_groups=sog.single_atom_groups,
+                single_conformer_groups=sog.single_conformer_groups,
+                atom_selection=sog.atom_selection,
+            )
+            if ("simple_occupancy_groups" in modes)
+            else DummyRestraintMaker(name="< step skipped >")
+        ),
+    )
 
     return maker
+
 
 def run(params):
 
     logger = lg.setup_logging(
-        name = __name__,
-        log_file = set_get_log(params),
-        debug = params.settings.verbose,
-        )
+        name=__name__,
+        log_file=set_get_log(params),
+        debug=params.settings.verbose,
+    )
 
     log_running_parameters(
-        params = params,
-        master_phil = master_phil,
-        logger = logger,
+        params=params,
+        master_phil=master_phil,
+        logger=logger,
     )
 
     validate_params(params)
@@ -286,63 +277,42 @@ def run(params):
     # Prepare output and input
     ######################################################################
 
-    overwrite = bool(
-        params.settings.overwrite
-        )
+    overwrite = bool(params.settings.overwrite)
 
-    input_pdb = pl.Path(
-        params.input.pdb
-        )
+    input_pdb = pl.Path(params.input.pdb)
 
-    output_root = (
-        params.output.output_root
-        )
+    output_root = params.output.output_root
 
-    output_formats = (
-        params.output.output_formats
-        )
+    output_formats = params.output.output_formats
 
     ###
 
     output_root = (
-        pl.Path(
-            str(output_root)
-            )
-        if (
-            output_root is not None
-            )
-        else (
-            input_pdb
-            ).with_name(
-            input_pdb.stem+'-restraints'
-            )
-        )
+        pl.Path(str(output_root))
+        if (output_root is not None)
+        else (input_pdb).with_name(input_pdb.stem + "-restraints")
+    )
 
     output_paths = {
-        k : output_root.with_suffix(
-            '.{k}.params'.format(k=k)
-            )
-        for k in output_formats
+        k: output_root.with_suffix(".{k}.params".format(k=k)) for k in output_formats
     }
 
-    output_pymol_filepath = (
-        output_root.with_suffix('.pymol.py')
-        )
+    output_pymol_filepath = output_root.with_suffix(".pymol.py")
     if output_pymol_filepath.exists():
-        if (overwrite is True):
+        if overwrite is True:
             os.remove(str(output_pymol_filepath))
 
     for k, p in list(output_paths.items()):
         if p.exists():
-            if (overwrite is True):
+            if overwrite is True:
                 os.remove(str(p))
             else:
                 raise IOError(
-                    'File already exists for {k}: {p}'.format(
-                        k = str(k),
-                        p = str(p),
-                        )
+                    "File already exists for {k}: {p}".format(
+                        k=str(k),
+                        p=str(p),
                     )
+                )
 
     ######################################################################
     # Generate objects
@@ -351,15 +321,15 @@ def run(params):
     make_restraints = build_restraints_maker(params.options)
 
     write_restraints = WriteRestraints(
-        formats = list(output_paths.keys()),
-        output_path_dict = output_paths,
-        )
+        formats=list(output_paths.keys()),
+        output_path_dict=output_paths,
+    )
 
     if params.output.write_pymol_script is True:
 
         write_restraints_pymol_script = WriteRestraintsPymolScript(
-            filepath = output_pymol_filepath,
-            )
+            filepath=output_pymol_filepath,
+        )
 
     else:
 
@@ -373,34 +343,36 @@ def run(params):
     model.hierarchy.sort_atoms_in_place()
 
     restraints_collection = make_restraints(
-        hierarchy = model.hierarchy,
-        )
+        hierarchy=model.hierarchy,
+    )
 
-    logger.heading('Output Restraints')
+    logger.heading("Output Restraints")
     logger(str(restraints_collection))
 
     formatted_restraints = write_restraints(
-        restraints_collection = restraints_collection,
-        )
+        restraints_collection=restraints_collection,
+    )
 
     if write_restraints_pymol_script is not None:
 
         write_restraints_pymol_script(
-            hierarchy = model.hierarchy,
-            restraints_collection = restraints_collection,
-            )
+            hierarchy=model.hierarchy,
+            restraints_collection=restraints_collection,
+        )
 
-    logger.heading('make_restraints finished normally')
+    logger.heading("make_restraints finished normally")
+
 
 ############################################################################
 
-if __name__=='__main__':
+if __name__ == "__main__":
     from giant.jiffies import run_default
+
     run_default(
-        run                 = run,
-        master_phil         = master_phil,
-        args                = sys.argv[1:],
-        blank_arg_prepend   = blank_arg_prepend,
-        program             = PROGRAM,
-        description         = DESCRIPTION,
+        run=run,
+        master_phil=master_phil,
+        args=sys.argv[1:],
+        blank_arg_prepend=blank_arg_prepend,
+        program=PROGRAM,
+        description=DESCRIPTION,
     )

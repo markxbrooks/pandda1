@@ -1,8 +1,7 @@
 import cctbx.miller
-
 import numpy
-
 from scitbx.array_family import flex
+
 
 def extract_structure_factors(mtz_object, ampl_label, phas_label):
     # Get the crystal symmetry from the amplitudes' crystal

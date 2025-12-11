@@ -1,13 +1,9 @@
 import giant.logs as lg
+from giant.structure.formatting import short_labeller
+
+from . import RestraintsCollection
+
 logger = lg.getLogger(__name__)
-
-from . import (
-    RestraintsCollection
-    )
-
-from giant.structure.formatting import (
-    short_labeller,
-    )
 
 
 class PruneConflictingRestraintsSimple(object):
@@ -18,7 +14,7 @@ class PruneConflictingRestraintsSimple(object):
 
     def __call__(self, restraints_collection):
 
-        logger.debug('** Pruning redundant restraints **')
+        logger.debug("** Pruning redundant restraints **")
 
         pruned = RestraintsCollection()
 
@@ -27,20 +23,20 @@ class PruneConflictingRestraintsSimple(object):
             restraints_collection = copy.deepcopy(restraints_collection)
 
         pruned_distance_restraints = self.prune_distance_restraints(
-            restraints_collection = restraints_collection,
-            )
+            restraints_collection=restraints_collection,
+        )
 
         if pruned_distance_restraints is not None:
             pruned.add(pruned_distance_restraints)
 
         pruned_occupancy_restraints = self.prune_occupancy_restraints(
-            restraints_collection = restraints_collection,
-            )
+            restraints_collection=restraints_collection,
+        )
 
         if pruned_occupancy_restraints is not None:
             pruned.add(pruned_occupancy_restraints)
 
-        logger.debug("** Pruned restraints **\n"+str(pruned))
+        logger.debug("** Pruned restraints **\n" + str(pruned))
 
         return restraints_collection
 
@@ -55,7 +51,7 @@ class PruneConflictingRestraintsSimple(object):
             label = (
                 short_labeller(r.atom1),
                 short_labeller(r.atom2),
-                )
+            )
 
             # Get any previous group with this label
             previous = r_hash.get(label, None)
@@ -71,8 +67,8 @@ class PruneConflictingRestraintsSimple(object):
             restraints_collection.distance_restraints.remove(r)
 
         return RestraintsCollection(
-            distance_restraints = prune_list,
-            )
+            distance_restraints=prune_list,
+        )
 
     def prune_occupancy_restraints(self, restraints_collection):
 
@@ -111,5 +107,5 @@ class PruneConflictingRestraintsSimple(object):
             restraints_collection.occupancy_restraints.remove(r)
 
         return RestraintsCollection(
-            occupancy_restraints = prune_list,
-            )
+            occupancy_restraints=prune_list,
+        )

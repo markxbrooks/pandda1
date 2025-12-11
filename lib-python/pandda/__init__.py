@@ -1,9 +1,11 @@
-import os, sys
+import os
+import sys
+
 import giant
 import pandda.resources
 
 __version_tuple__ = (2, 0, 0)
-__version__ = '.'.join(map(str,__version_tuple__))
+__version__ = ".".join(map(str, __version_tuple__))
 
 HEADER_TEXT = """
 ------------------------------------------------------------------>
@@ -37,18 +39,18 @@ HEADER_TEXT = """
 {description}
 ------------------------------------------------------------------>
 """.format(
-    giant_version = str(giant.__version__),
-    module_version = "{module_version}",
-    program = "{program}",
-    description = "{description}",
-    )
+    giant_version=str(giant.__version__),
+    module_version="{module_version}",
+    program="{program}",
+    description="{description}",
+)
 
 
 class ModuleBanner(giant.ModuleBanner):
-    
+
     banner_string = HEADER_TEXT
 
-    module_name = 'pandda'
+    module_name = "pandda"
     module_version = __version__
 
 

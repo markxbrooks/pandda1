@@ -89,26 +89,26 @@ an open-source SGE cluster manager for use with Amazon EC2::
 # - Runner function hits the work button on it
 
 from future import standard_library
+
 standard_library.install_aliases()
-import os
-import subprocess
-import time
-import sys
-import logging
-import random
+import logging  # noqa: E402
+import os  # noqa: E402
+import random  # noqa: E402
+import subprocess  # noqa: E402
+import sys  # noqa: E402
+import time  # noqa: E402
 
 try:
     import pickle as pickle
 except ImportError:
     import pickle
 
-import cloudpickle
+import cloudpickle  # noqa: E402
+import luigi  # noqa: E402
+from luigi.contrib import sge_runner  # noqa: E402
+from luigi.contrib.hadoop import create_packages_archive  # noqa: E402
 
-import luigi
-from luigi.contrib.hadoop import create_packages_archive
-from luigi.contrib import sge_runner
-
-logger = logging.getLogger('luigi-interface')
+logger = logging.getLogger("luigi-interface")
 logger.propagate = 0
 
 POLL_TIME = 5  # decided to hard-code rather than configure here
@@ -121,18 +121,18 @@ def _parse_qstat_state(qstat_out, job_id):
     `qstat` output is empty or job_id is not found.
 
     """
-    if qstat_out.strip() == '':
-        return 'u'
-    lines = qstat_out.split('\n')
+    if qstat_out.strip() == "":
+        return "u"
+    lines = qstat_out.split("\n")
     # skip past header
-    while not lines.pop(0).startswith('---'):
+    while not lines.pop(0).startswith("---"):
         pass
     for line in lines:
         if line:
             job, prior, name, user, state = line.strip().split()[0:5]
             if int(job) == int(job_id):
                 return state
-    return 'u'
+    return "u"
 
 
 def _parse_qsub_job_id(qsub_out):
@@ -147,6 +147,7 @@ def _parse_qsub_job_id(qsub_out):
     print(qsub_out)
     print("###############################")
     import re
+
     regex = "[0-9]+"
 
     job_id = re.findall(regex, qsub_out)[0]
@@ -154,7 +155,9 @@ def _parse_qsub_job_id(qsub_out):
     return int(job_id)
 
 
-def _build_qsub_command(cmd, job_name, outfile, errfile, pe, n_cpu=3, h_vmem=100, m_mem_free=5):
+def _build_qsub_command(
+    cmd, job_name, outfile, errfile, pe, n_cpu=3, h_vmem=100, m_mem_free=5
+):
     """Submit shell command to SGE queue via `qsub`"""
     # qsub_template = """echo {cmd} | qsub -o ":{outfile}" -e ":{errfile}" -V -r y -pe {pe} {n_cpu} -N {job_name}"""
     # return qsub_template.format(
@@ -163,15 +166,15 @@ def _build_qsub_command(cmd, job_name, outfile, errfile, pe, n_cpu=3, h_vmem=100
 
     qsub_template = """echo {cmd} | qsub -pe smp {n_cpu} -P labxchem -q medium.q -o ":{outfile}" -e ":{errfile}" -N {job_name} -l h_vmem={h_vmem}G,redhat_release=rhel7,m_mem_free={m_mem_free}G"""
 
-
-    qsub_command = qsub_template.format(cmd=cmd,
-                                        job_name=job_name,
-                                        outfile=outfile,
-                                        errfile=errfile,
-                                        n_cpu=n_cpu,
-                                        h_vmem=h_vmem,
-                                        m_mem_free=m_mem_free,
-                                        )
+    qsub_command = qsub_template.format(
+        cmd=cmd,
+        job_name=job_name,
+        outfile=outfile,
+        errfile=errfile,
+        n_cpu=n_cpu,
+        h_vmem=h_vmem,
+        m_mem_free=m_mem_free,
+    )
 
     return qsub_command
 
@@ -207,31 +210,37 @@ class SGEJobTask(luigi.Task):
     """
 
     n_cpu = luigi.IntParameter(default=2, significant=False)
-    shared_tmp_dir = luigi.Parameter(default='/home', significant=False)
-    parallel_env = luigi.Parameter(default='orte', significant=False)
+    shared_tmp_dir = luigi.Parameter(default="/home", significant=False)
+    parallel_env = luigi.Parameter(default="orte", significant=False)
     job_name_format = luigi.Parameter(
-        significant=False, default=None, description="A string that can be "
-                                                     "formatted with class variables to name the job with qsub.")
-    job_name = luigi.Parameter(
-        significant=False, default=None,
-        description="Explicit job name given via qsub.")
-    run_locally = luigi.BoolParameter(
         significant=False,
-        description="run locally instead of on the cluster")
+        default=None,
+        description="A string that can be "
+        "formatted with class variables to name the job with qsub.",
+    )
+    job_name = luigi.Parameter(
+        significant=False, default=None, description="Explicit job name given via qsub."
+    )
+    run_locally = luigi.BoolParameter(
+        significant=False, description="run locally instead of on the cluster"
+    )
     poll_time = luigi.IntParameter(
-        significant=False, default=POLL_TIME,
-        description="specify the wait time to poll qstat for the job status")
+        significant=False,
+        default=POLL_TIME,
+        description="specify the wait time to poll qstat for the job status",
+    )
     dont_remove_tmp_dir = luigi.BoolParameter(
         significant=False,
-        description="don't delete the temporary directory used (for debugging)")
+        description="don't delete the temporary directory used (for debugging)",
+    )
     no_tarball = luigi.BoolParameter(
         significant=False,
-        description="don't tarball (and extract) the luigi project files")
+        description="don't tarball (and extract) the luigi project wrappers",
+    )
 
     # Custom params
     h_vmem = luigi.IntParameter(default=100)
     m_mem_free = luigi.IntParameter(default=5)
-
 
     def __init__(self, *args, **kwargs):
         super(SGEJobTask, self).__init__(*args, **kwargs)
@@ -241,20 +250,23 @@ class SGEJobTask(luigi.Task):
         elif self.job_name_format:
             # define the job name with the provided format
             self.job_name = self.job_name_format.format(
-                task_family=self.task_family, **self.__dict__)
+                task_family=self.task_family, **self.__dict__
+            )
         else:
             # default to the task family
             self.job_name = self.task_family
 
     def _fetch_task_failures(self):
         if not os.path.exists(self.errfile):
-            logger.info('No error file')
+            logger.info("No error file")
             return []
         with open(self.errfile, "r") as f:
             errors = f.readlines()
         if errors == []:
             return errors
-        if errors[0].strip() == 'stdin: is not a tty':  # SGE complains when we submit through a pipe
+        if (
+            errors[0].strip() == "stdin: is not a tty"
+        ):  # SGE complains when we submit through a pipe
             errors.pop(0)
         return errors
 
@@ -262,8 +274,8 @@ class SGEJobTask(luigi.Task):
 
         # Set up temp folder in shared directory (trim to max filename length)
         base_tmp_dir = self.shared_tmp_dir
-        random_id = '%016x' % random.getrandbits(64)
-        folder_name = self.task_id + '-' + random_id
+        random_id = "%016x" % random.getrandbits(64)
+        folder_name = self.task_id + "-" + random_id
         self.tmp_dir = os.path.join(base_tmp_dir, folder_name)
         max_filename_length = os.fstatvfs(0).f_namemax
         self.tmp_dir = self.tmp_dir[:max_filename_length]
@@ -279,8 +291,10 @@ class SGEJobTask(luigi.Task):
             # This is not necessary if luigi is importable from the cluster node
             logging.debug("Tarballing dependencies")
             # Grab luigi and the module containing the code to be run
-            packages = [luigi] + [__import__(self.__module__, None, None, 'dummy')]
-            create_packages_archive(packages, os.path.join(self.tmp_dir, "packages.tar"))
+            packages = [luigi] + [__import__(self.__module__, None, None, "dummy")]
+            create_packages_archive(
+                packages, os.path.join(self.tmp_dir, "packages.tar")
+            )
 
     def run(self):
         if self.run_locally:
@@ -300,20 +314,20 @@ class SGEJobTask(luigi.Task):
         """Override this method, rather than ``run()``,  for your actual work."""
         pass
 
-    def _dump(self, out_dir=''):
+    def _dump(self, out_dir=""):
         """Dump instance to file."""
         if True:
 
             print("##################joining paths")
-            self.job_file = os.path.join(out_dir, 'job-instance.pickle')
+            self.job_file = os.path.join(out_dir, "job-instance.pickle")
 
             print("#################checking if main")
-            if self.__module__ == '__main__':
+            if self.__module__ == "__main__":
                 print("##########################dumping pickle")
 
                 d = cloudpickle.dumps(self)
-                module_name = os.path.basename(sys.argv[0]).rsplit('.', 1)[0]
-                d = d.replace('(c__main__', "(c" + module_name)
+                module_name = os.path.basename(sys.argv[0]).rsplit(".", 1)[0]
+                d = d.decode("utf-8").replace("(c__main__", "(c" + module_name)
                 with open(self.job_file, "w") as f:
                     f.write(d)
             else:
@@ -328,24 +342,26 @@ class SGEJobTask(luigi.Task):
         if runner_path.endswith("pyc"):
             runner_path = runner_path[:-3] + "py"
         job_str = '/dls/science/groups/i04-1/conor_dev/ccp4/build/bin/cctbx.python {0} "{1}" "{2}"'.format(
-            runner_path, self.tmp_dir, os.getcwd())  # enclose tmp_dir in quotes to protect from special escape chars
+            runner_path, self.tmp_dir, os.getcwd()
+        )  # enclose tmp_dir in quotes to protect from special escape chars
         if self.no_tarball:
             job_str += ' "--no-tarball"'
 
         # Build qsub submit command
-        self.outfile = os.path.join(self.tmp_dir, 'job.out')
-        self.errfile = os.path.join(self.tmp_dir, 'job.err')
-        submit_cmd = _build_qsub_command(job_str,
-                                         self.task_family,
-                                         self.outfile,
-                                         self.errfile,
-                                         self.parallel_env,
-                                         n_cpu=self.n_cpu,
-                                         h_vmem=self.h_vmem,
-                                         m_mem_free=self.m_mem_free,
-                                         )
+        self.outfile = os.path.join(self.tmp_dir, "job.out")
+        self.errfile = os.path.join(self.tmp_dir, "job.err")
+        submit_cmd = _build_qsub_command(
+            job_str,
+            self.task_family,
+            self.outfile,
+            self.errfile,
+            self.parallel_env,
+            n_cpu=self.n_cpu,
+            h_vmem=self.h_vmem,
+            m_mem_free=self.m_mem_free,
+        )
 
-        logger.debug('qsub command: \n' + submit_cmd)
+        logger.debug("qsub command: \n" + submit_cmd)
 
         # Submit the job and grab job ID
         output = subprocess.check_output(submit_cmd, shell=True)
@@ -355,8 +371,12 @@ class SGEJobTask(luigi.Task):
         self._track_job()
 
         # Now delete the temporaries, if they're there.
-        if (self.tmp_dir and os.path.exists(self.tmp_dir) and not self.dont_remove_tmp_dir):
-            logger.info('Removing temporary directory %s' % self.tmp_dir)
+        if (
+            self.tmp_dir
+            and os.path.exists(self.tmp_dir)
+            and not self.dont_remove_tmp_dir
+        ):
+            logger.info("Removing temporary directory %s" % self.tmp_dir)
             subprocess.call(["rm", "-rf", self.tmp_dir])
 
     def _track_job(self):
@@ -366,27 +386,32 @@ class SGEJobTask(luigi.Task):
 
             # See what the job's up to
             # ASSUMPTION
-            qstat_out = subprocess.check_output(['qstat'])
+            qstat_out = subprocess.check_output(["qstat"])
             sge_status = _parse_qstat_state(qstat_out, self.job_id)
-            if sge_status == 'r':
-                logger.info('Job is running...')
-            elif sge_status == 'qw':
-                logger.info('Job is pending...')
-            elif 'E' in sge_status:
-                logger.error('Job has FAILED:\n' + '\n'.join(self._fetch_task_failures()))
+            if sge_status == "r":
+                logger.info("Job is running...")
+            elif sge_status == "qw":
+                logger.info("Job is pending...")
+            elif "E" in sge_status:
+                logger.error(
+                    "Job has FAILED:\n" + "\n".join(self._fetch_task_failures())
+                )
                 break
-            elif sge_status == 't' or sge_status == 'u':
+            elif sge_status == "t" or sge_status == "u":
                 # Then the job could either be failed or done.
                 errors = self._fetch_task_failures()
                 if not errors:
-                    logger.info('Job is done')
+                    logger.info("Job is done")
                 else:
-                    logger.error('Job has FAILED:\n' + '\n'.join(errors))
+                    logger.error("Job has FAILED:\n" + "\n".join(errors))
                 break
             else:
-                logger.info('Job status is UNKNOWN!')
-                logger.info('Status is : %s' % sge_status)
-                raise Exception("job status isn't one of ['r', 'qw', 'E*', 't', 'u']: %s" % sge_status)
+                logger.info("Job status is UNKNOWN!")
+                logger.info("Status is : %s" % sge_status)
+                raise Exception(
+                    "job status isn't one of ['r', 'qw', 'E*', 't', 'u']: %s"
+                    % sge_status
+                )
 
 
 class LocalSGEJobTask(SGEJobTask):

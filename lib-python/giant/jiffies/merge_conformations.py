@@ -1,34 +1,22 @@
-import giant.logs as lg
-logger = lg.getLogger(__name__)
-
-import sys
 import pathlib as pl
+import sys
 
-from giant.phil import (
-    log_running_parameters,
-    )
-
-from giant.mulch.dataset import (
-    AtomicModel,
-    )
-
-from giant.structure.conformers import (
-    MakeMultiStateModel,
-    )
-
+import giant.logs as lg
+from giant.jiffies import make_restraints
+from giant.mulch.dataset import AtomicModel
+from giant.phil import log_running_parameters
+from giant.structure.conformers import MakeMultiStateModel
 from giant.structure.occupancy import (
-    ScaleOccupancies,
-    SanitiseOccupancies,
     ResetOccupancies,
-    )
+    SanitiseOccupancies,
+    ScaleOccupancies,
+)
 
-from giant.jiffies import (
-    make_restraints,
-    )
+logger = lg.getLogger(__name__)
 
 ############################################################################
 
-PROGRAM = 'giant.merge_conformations'
+PROGRAM = "giant.merge_conformations"
 
 DESCRIPTION = """
     A tool to merge multiple models of the same crystal into one structure.
@@ -46,11 +34,13 @@ DESCRIPTION = """
 ############################################################################
 
 blank_arg_prepend = {
-    '.pdb' : 'input.pdb=',
+    ".pdb": "input.pdb=",
 }
 
-import libtbx.phil
-master_phil = libtbx.phil.parse("""
+import libtbx.phil  # noqa: E402
+
+master_phil = libtbx.phil.parse(
+    """
 input {
     pdb = None
         .type = str
@@ -94,72 +84,67 @@ settings {
     verbose = False
         .type = bool
 }
-""", process_includes=True)
+""",
+    process_includes=True,
+)
 
 ############################################################################
+
 
 def set_get_log(params):
 
     if params.output.log is not None:
         pass
     elif params.output.pdb is not None:
-        params.output.log = str(
-            pl.Path(params.output.pdb).with_suffix('.log')
-            )
+        params.output.log = str(pl.Path(params.output.pdb).with_suffix(".log"))
     else:
         # probably going to error, so set some default
         params.output.log = "merge_conformations.log"
 
     return params.output.log
 
+
 def validate_params(params):
 
-    params.input.pdb = [
-        p for p in params.input.pdb
-        if p is not None
-        ]
+    params.input.pdb = [p for p in params.input.pdb if p is not None]
 
     if len(params.input.pdb) == 0:
-        raise IOError('No input PDBs provided.')
+        raise IOError("No input PDBs provided.")
 
     if len(params.input.pdb) == 1:
-        raise IOError('Only one input PDB provided.')
+        raise IOError("Only one input PDB provided.")
 
     for p in params.input.pdb:
 
         if not pl.Path(p).exists():
 
-            raise IOError(
-                'File does not exist: {path}'.format(
-                    str(p)
-                    )
-                )
+            raise IOError("File does not exist: {path}".format(str(p)))
 
     if (params.output.pdb is None) or (not params.output.pdb.strip()):
 
-        raise IOError('No output PDB file provided.')
+        raise IOError("No output PDB file provided.")
 
     # Check existence of output pdb and delete as necessary
     if pl.Path(params.output.pdb).exists() and (not params.settings.overwrite):
 
         raise IOError(
-            'Output file already exists: {path}.\nRun with overwrite=True to remove this file'.format(
-                path = params.output.pdb,
-                )
+            "Output file already exists: {path}.\nRun with overwrite=True to remove this file".format(
+                path=params.output.pdb,
             )
+        )
 
     if (params.options.occupancy is not None) and len(params.options.occupancy) > 0:
 
-        occupancies = list(map(float, params.options.occupancy.split(',')))
+        occupancies = list(map(float, params.options.occupancy.split(",")))
 
         if len(occupancies) != len(params.input.pdb):
 
             raise IOError(
-                "Must provide the same number of occupancies as input PDB files: \n{pdbs}\n{occupancies}".format(
-                    pdbs = len(params.input.pdb),
-                    occupancies = len(params.options.occupancy),
-                    )
+                "Must provide the same number of occupancies as input PDB wrappers: \n{pdbs}\n{occupancies}".format(
+                    pdbs=len(params.input.pdb),
+                    occupancies=len(params.options.occupancy),
                 )
+            )
 
         for o in occupancies:
 
@@ -167,9 +152,9 @@ def validate_params(params):
 
                 raise IOError(
                     "Invalid occupancy (must be between 0.0 and 1.0): {o}".format(
-                        o = o,
-                        )
+                        o=o,
                     )
+                )
 
         occ_sum = sum(occupancies)
 
@@ -177,81 +162,73 @@ def validate_params(params):
 
             raise IOError(
                 "Occupancy sum must be less than 1.0: {occs}={occ_sum}".format(
-                    occs = '+'.join(map(str, occupancies)),
-                    occ_sum = occ_sum,
-                    )
+                    occs="+".join(map(str, occupancies)),
+                    occ_sum=occ_sum,
                 )
+            )
 
 
 class MergeConformations(object):
 
-    def __init__(self,
+    def __init__(
+        self,
         prune_rmsd_cutoff,
-        sanitise_occupancies = False,
-        reset_all_occupancies = False,
-        ):
+        sanitise_occupancies=False,
+        reset_all_occupancies=False,
+    ):
 
         self.scale_occupancies = ScaleOccupancies(
-            in_place = True,
-            )
+            in_place=True,
+        )
 
         self.merge_hierarchies = MakeMultiStateModel(
-            prune_rmsd_cutoff = prune_rmsd_cutoff,
-            in_place = True,
-            )
+            prune_rmsd_cutoff=prune_rmsd_cutoff,
+            in_place=True,
+        )
 
         self.sanitise_occupancies = (
-            SanitiseOccupancies()
-            if sanitise_occupancies
-            else None
-            )
+            SanitiseOccupancies() if sanitise_occupancies else None
+        )
 
-        self.reset_occupancies = (
-            ResetOccupancies()
-            if reset_all_occupancies
-            else None
-            )
+        self.reset_occupancies = ResetOccupancies() if reset_all_occupancies else None
 
-    def __call__(self,
+    def __call__(
+        self,
         hierarchies,
-        occupancies = None,
-        ):
+        occupancies=None,
+    ):
 
         # Copy as will be modifying the list
         hierarchies = list(hierarchies)
 
-        if (occupancies is not None):
+        if occupancies is not None:
 
             logger.subheading(
-                'Applying input occupancies prior to merging: \n\t{occs}'.format(
-                    occs = str(occupancies),
-                    )
+                "Applying input occupancies prior to merging: \n\t{occs}".format(
+                    occs=str(occupancies),
                 )
+            )
 
             assert len(occupancies) == len(hierarchies)
 
             for h, o in zip(hierarchies, occupancies):
 
                 self.scale_occupancies(
-                    atoms = h.atoms(),
-                    multiplier = o,
-                    )
+                    atoms=h.atoms(),
+                    multiplier=o,
+                )
 
         #####
 
-        logger.heading(
-            'Merging models'
-            )
+        logger.heading("Merging models")
 
         hierarchy = self.merge_hierarchies(
-            hierarchies = hierarchies,
-            )
+            hierarchies=hierarchies,
+        )
 
         #####
 
-        logger.subheading(
-            'Post-processing occupancies'
-            )
+        logger.subheading("Post-processing occupancies")
 
         # Reset occupancies
         if self.reset_occupancies is not None:
@@ -268,17 +245,16 @@ class MergeConformations(object):
 
 class MakeOutputRestraints(object):
 
-    def __init__(self,
+    def __init__(
+        self,
         params,
-        ):
+    ):
 
-        self.make_restraints_master_phil = (
-            make_restraints.master_phil
-            )
+        self.make_restraints_master_phil = make_restraints.master_phil
 
         self.scope = self.get_scope(
-            params = params,
-            )
+            params=params,
+        )
 
     def __call__(self, pdb_path):
 
@@ -287,14 +263,10 @@ class MakeOutputRestraints(object):
         params.input.pdb = str(pdb_path)
 
         # Report
-        logger.heading(
-            'Making restraints for output structure'
-            )
+        logger.heading("Making restraints for output structure")
         #
 
-        output = make_restraints.run(
-            params
-            )
+        output = make_restraints.run(params)
 
         return output
 
@@ -305,12 +277,8 @@ class MakeOutputRestraints(object):
         master_phil = self.make_restraints_master_phil
         #
         merged_params = (
-            master_phil.fetch(
-                master_phil.format(
-                    params.restraints
-                    )
-                )
-            ).extract()
+            master_phil.fetch(master_phil.format(params.restraints))
+        ).extract()
 
         # Transfer from the main params
         merged_params.settings.overwrite = params.settings.overwrite
@@ -320,9 +288,7 @@ class MakeOutputRestraints(object):
         merged_params.output.log = None
 
         # Reformat to a scope (can be copied)
-        merged_scope = master_phil.format(
-            merged_params
-            )
+        merged_scope = master_phil.format(merged_params)
 
         return merged_scope
 
@@ -330,106 +296,91 @@ class MakeOutputRestraints(object):
 def run(params):
 
     logger = lg.setup_logging(
-        name = __name__,
-        log_file = set_get_log(params),
-        debug = params.settings.verbose,
-        )
+        name=__name__,
+        log_file=set_get_log(params),
+        debug=params.settings.verbose,
+    )
 
     # Report
-    logger.subheading(
-        'Validating input parameters and input files'
-        )
+    logger.subheading("Validating input parameters and input wrappers")
 
     validate_params(params)
 
     log_running_parameters(
-        params = params,
-        master_phil = master_phil,
-        logger = logger,
+        params=params,
+        master_phil=master_phil,
+        logger=logger,
     )
 
-    logger.subheading(
-        'Setting up...'
-        )
+    logger.subheading("Setting up...")
 
     merge_conformations = MergeConformations(
-        prune_rmsd_cutoff = params.options.prune_duplicates_rmsd,
-        sanitise_occupancies = params.options.sanitise_occupancies,
-        reset_all_occupancies = params.options.reset_all_occupancies,
-        )
+        prune_rmsd_cutoff=params.options.prune_duplicates_rmsd,
+        sanitise_occupancies=params.options.sanitise_occupancies,
+        reset_all_occupancies=params.options.reset_all_occupancies,
+    )
 
     make_output_restraints = (
         MakeOutputRestraints(
-            params = params,
-            )
+            params=params,
+        )
         if params.restraints.make_restraints
         else None
-        )
+    )
 
     #####
 
-    logger.subheading(
-        'Reading input files'
-        )
+    logger.subheading("Reading input wrappers")
 
-    models = [
-        AtomicModel.from_file(p)
-        for p in params.input.pdb
-        ]
+    models = [AtomicModel.from_file(p) for p in params.input.pdb]
 
-    logger(
-        '\n\n'.join(map(str, models))
-        )
+    logger("\n\n".join(map(str, models)))
 
     #####
 
     hierarchy = merge_conformations(
-        hierarchies = [m.hierarchy for m in models],
-        occupancies = (
-            list(map(float, params.options.occupancy.split(',')))
+        hierarchies=[m.hierarchy for m in models],
+        occupancies=(
+            list(map(float, params.options.occupancy.split(",")))
             if params.options.occupancy
             else None
-            ),
-        )
+        ),
+    )
 
     # Update the atom numbering
     hierarchy.sort_atoms_in_place()
     hierarchy.atoms_reset_serial()
 
     # Write output file
-    logger.subheading(
-        'Writing output structure'
-        )
+    logger.subheading("Writing output structure")
 
-    logger(
-        'Writing output structure to {}'.format(params.output.pdb)
-        )
+    logger("Writing output structure to {}".format(params.output.pdb))
 
     model = models[0]
     hierarchy.write_pdb_file(
-        file_name = params.output.pdb,
-        crystal_symmetry = (
-            model.input.crystal_symmetry()
-            ),
+        file_name=params.output.pdb,
+        crystal_symmetry=(model.input.crystal_symmetry()),
     )
 
     if make_output_restraints is not None:
 
         restraints = make_output_restraints(
-            pdb_path = params.output.pdb,
-            )
+            pdb_path=params.output.pdb,
+        )
 
-    logger.heading('merge_conformations finished normally')
+    logger.heading("merge_conformations finished normally")
+
 
 ############################################################################
 
-if __name__=='__main__':
+if __name__ == "__main__":
     from giant.jiffies import run_default
+
     run_default(
-        run                 = run,
-        master_phil         = master_phil,
-        args                = sys.argv[1:],
-        blank_arg_prepend   = blank_arg_prepend,
-        program             = PROGRAM,
-        description         = DESCRIPTION,
+        run=run,
+        master_phil=master_phil,
+        args=sys.argv[1:],
+        blank_arg_prepend=blank_arg_prepend,
+        program=PROGRAM,
+        description=DESCRIPTION,
     )

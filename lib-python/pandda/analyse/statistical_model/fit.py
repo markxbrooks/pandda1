@@ -1,12 +1,11 @@
-import giant.logs as lg
-logger = lg.getLogger(__name__)
-
 import numpy as np
-
 from scipy import stats
 from scipy.stats import kde
 
+import giant.logs as lg
 from .ospina import estimate_true_underlying_sd
+
+logger = lg.getLogger(__name__)
 
 
 class CalculateMu(object):
@@ -36,18 +35,16 @@ class SigmaUncertaintyCalculator(object):
     def set_n(self, n_values):
 
         # Extract the theoretical quantiles that we would expect if these values were from a normal distribution
-        self.theoretical_values = (
-            stats.norm.ppf(np.linspace(0.,1.,n_values+2), 0., 1.)[1:-1] # chop ends which are inf
-            )
+        self.theoretical_values = stats.norm.ppf(
+            np.linspace(0.0, 1.0, n_values + 2), 0.0, 1.0
+        )[
+            1:-1
+        ]  # chop ends which are inf
 
         # Select the points in the middle of the distribution
-        self.middle_selection = (
-            np.abs(self.theoretical_values) < self.q_cut
-            )
+        self.middle_selection = np.abs(self.theoretical_values) < self.q_cut
 
-        self.middle_theoretical_values = (
-            self.theoretical_values[self.middle_selection]
-            )
+        self.middle_theoretical_values = self.theoretical_values[self.middle_selection]
 
     def set_reference_data(self, map_data):
         self.reference_map_data = map_data
@@ -66,23 +63,25 @@ class SigmaUncertaintyCalculator(object):
 
         # Calculate the slope of the centre of the graph
         map_unc, map_off = np.polyfit(
-            x = self.middle_theoretical_values,
-            y = middle_actual_values,
-            deg = 1,
-            )
+            x=self.middle_theoretical_values,
+            y=middle_actual_values,
+            deg=1,
+        )
 
         return map_unc
 
 
 class CalculateSigmaUncertainties(object):
 
-    def __init__(self, 
-        map_selection = None,
-        processor = None, 
-        ):
+    def __init__(
+        self,
+        map_selection=None,
+        processor=None,
+    ):
 
-        if (processor is None):
+        if processor is None:
             from giant.processors import basic_processor
+
             processor = basic_processor
 
         self.calculator = SigmaUncertaintyCalculator()
@@ -91,29 +90,30 @@ class CalculateSigmaUncertainties(object):
 
         self.processor = processor
 
-    def __call__(self,
+    def __call__(
+        self,
         map_array,
         mu_map_data,
-        ):
+    ):
 
-        if (self.map_selection is not None):
+        if self.map_selection is not None:
             mu_map_data = mu_map_data[self.map_selection]
 
         self.calculator.set_reference_data(
-            map_data = mu_map_data,
-            )
+            map_data=mu_map_data,
+        )
 
         jobs = []
 
         for i, map_data in enumerate(map_array):
 
-            if (self.map_selection is not None):
+            if self.map_selection is not None:
                 map_data = map_data[self.map_selection]
 
             func = self.processor.make_wrapper(
-                func = self.calculator,
-                map_data = map_data,
-                )
+                func=self.calculator,
+                map_data=map_data,
+            )
 
             jobs.append(func)
 
@@ -142,18 +142,16 @@ class SigmaAdjustedCalculator(object):
             for i, map_values in enumerate(map_array.T):
 
                 sadj = estimate_true_underlying_sd(
-                    obs_vals = map_values,
-                    obs_error = sigma_uncertainties,
-                    est_mu = mu_map_data[i],
-                    est_sigma = initial_guess,
-                    )
+                    obs_vals=map_values,
+                    obs_error=sigma_uncertainties,
+                    est_mu=mu_map_data[i],
+                    est_sigma=initial_guess,
+                )
 
                 sadj_values[i] = sadj
 
                 # Update guess as shortcut
-                initial_guess = max(
-                    sadj, self.minimal_guess
-                )
+                initial_guess = max(sadj, self.minimal_guess)
 
         return sadj_values
 
@@ -166,21 +164,22 @@ class CalculateSigmaAdjusted(object):
         self.calculator = SigmaAdjustedCalculator()
         self.chunk_size = chunk_size
 
-    def __call__(self,
+    def __call__(
+        self,
         map_array,
         mu_map_data,
         sigma_uncertainties,
-        ):
+    ):
 
-        if len(map_array) == 1: 
+        if len(map_array) == 1:
             sadj_map_data = np.zeros_like(mu_map_data)
             return sadj_map_data
 
         job_iterator = self.chunk_iterator(
-            map_array = map_array,
-            mu_map_data = mu_map_data,
-            sigma_uncertainties = sigma_uncertainties,
-            )
+            map_array=map_array,
+            mu_map_data=mu_map_data,
+            sigma_uncertainties=sigma_uncertainties,
+        )
 
         result_chunks = self.processor(job_iterator)
 
@@ -188,57 +187,60 @@ class CalculateSigmaAdjusted(object):
 
         for i, map_chunk in enumerate(result_chunks):
 
-            sadj_map_data[i*self.chunk_size:(i+1)*self.chunk_size] = map_chunk
+            sadj_map_data[i * self.chunk_size : (i + 1) * self.chunk_size] = map_chunk
 
         return sadj_map_data
 
-    def chunk_iterator(self,
+    def chunk_iterator(
+        self,
         map_array,
         mu_map_data,
         sigma_uncertainties,
-        ):
+    ):
 
         for i in range(0, len(mu_map_data), self.chunk_size):
 
             func = self.processor.make_wrapper(
-                func = self.calculator,
-                map_array = map_array[:,i:i+self.chunk_size],
-                mu_map_data = mu_map_data[i:i+self.chunk_size],
-                sigma_uncertainties = sigma_uncertainties,
-                )
+                func=self.calculator,
+                map_array=map_array[:, i : i + self.chunk_size],
+                mu_map_data=mu_map_data[i : i + self.chunk_size],
+                sigma_uncertainties=sigma_uncertainties,
+            )
 
             yield func
 
 
 class PanddaStatisticalModelFitter(object):
 
-    def __init__(self,
-        fit_mu = True,
-        fit_sigma_adjusted = True,
-        sigma_uncertainty_map_selection = None,
-        processor = None,
-        ):
+    def __init__(
+        self,
+        fit_mu=True,
+        fit_sigma_adjusted=True,
+        sigma_uncertainty_map_selection=None,
+        processor=None,
+    ):
 
-        if (processor is None):
+        if processor is None:
             from giant.processors import basic_processor
+
             processor = basic_processor
 
         self.processor = processor
 
-        if (fit_mu is True):
+        if fit_mu is True:
             self.calculate_mu = CalculateMu()
         else:
             self.calculate_mu = None
 
         self.calculate_sigma_uncertainties = CalculateSigmaUncertainties(
-            map_selection = sigma_uncertainty_map_selection,
-            processor = processor,
-            )
+            map_selection=sigma_uncertainty_map_selection,
+            processor=processor,
+        )
 
-        if (fit_sigma_adjusted is True):
+        if fit_sigma_adjusted is True:
             self.calculate_sigma_adjusted = CalculateSigmaAdjusted(
-                processor = processor,
-                )
+                processor=processor,
+            )
         else:
             self.calculate_sigma_adjusted = None
 
@@ -251,56 +253,50 @@ class PanddaStatisticalModelFitter(object):
 
         ###
 
-        if (self.calculate_mu is not None):
-            logger('\n> Calculating Mu Values\n')
+        if self.calculate_mu is not None:
+            logger("\n> Calculating Mu Values\n")
             mu_map_data = self.calculate_mu(map_array)
         else:
-            logger('\n> Using Zero Mu Values\n')
-            mu_map_data = (
-                np.zeros(map_array.shape[1], dtype=float)
-                )
+            logger("\n> Using Zero Mu Values\n")
+            mu_map_data = np.zeros(map_array.shape[1], dtype=float)
 
         ###
 
-        logger('\n> Calculating Sigma-Uncertainty Values\n')
+        logger("\n> Calculating Sigma-Uncertainty Values\n")
         sigma_uncertainties = self.calculate_sigma_uncertainties(
-            map_array = map_array,
-            mu_map_data = mu_map_data,
-            )
+            map_array=map_array,
+            mu_map_data=mu_map_data,
+        )
 
         ###
 
-        if (self.calculate_sigma_adjusted is not None):
-            logger('\n> Calculating Sigma-Adjusted Values\n')
+        if self.calculate_sigma_adjusted is not None:
+            logger("\n> Calculating Sigma-Adjusted Values\n")
             sigma_adjusted_map_data = self.calculate_sigma_adjusted(
-                map_array = map_array,
-                mu_map_data = mu_map_data,
-                sigma_uncertainties = sigma_uncertainties,
-                )
+                map_array=map_array,
+                mu_map_data=mu_map_data,
+                sigma_uncertainties=sigma_uncertainties,
+            )
         else:
-            logger('\n> Using Zero Sigma-Adjusted Values\n')
-            sigma_adjusted_map_data = (
-                np.zeros(map_array.shape[1], dtype=float)
-                )
+            logger("\n> Using Zero Sigma-Adjusted Values\n")
+            sigma_adjusted_map_data = np.zeros(map_array.shape[1], dtype=float)
 
         ###
 
-        dataset_sigma_uncertainties = dict(
-            zip(dataset_keys, sigma_uncertainties)
-            )
+        dataset_sigma_uncertainties = dict(zip(dataset_keys, sigma_uncertainties))
 
         ###
 
         fitted_model = PanddaStatisticalModel(
-            mu_map_data = mu_map_data,
-            sigma_adjusted_map_data = sigma_adjusted_map_data,
-            sigma_uncertainty_calculator = self.calculate_sigma_uncertainties.calculator,
-            sigma_uncertainty_map_selection = self.calculate_sigma_uncertainties.map_selection,
-            dataset_sigma_uncertainties = dataset_sigma_uncertainties,
-            cache_sigma_uncertainties = True,
-            )
+            mu_map_data=mu_map_data,
+            sigma_adjusted_map_data=sigma_adjusted_map_data,
+            sigma_uncertainty_calculator=self.calculate_sigma_uncertainties.calculator,
+            sigma_uncertainty_map_selection=self.calculate_sigma_uncertainties.map_selection,
+            dataset_sigma_uncertainties=dataset_sigma_uncertainties,
+            cache_sigma_uncertainties=True,
+        )
 
-        logger.subheading('Fitted Statistical Model')
+        logger.subheading("Fitted Statistical Model")
         logger(str(fitted_model))
 
         return fitted_model

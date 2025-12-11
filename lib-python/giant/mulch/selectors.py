@@ -1,7 +1,8 @@
-import giant.logs as lg
-logger = lg.getLogger(__name__)
-
 import numpy as np
+
+import giant.logs as lg
+
+logger = lg.getLogger(__name__)
 
 
 class DatasetKeySelector(object):
@@ -25,11 +26,11 @@ class DatasetKeySelector(object):
 
 class SortedDatasetSelector(object):
 
-
-    def __init__(self,
+    def __init__(
+        self,
         max_datasets,
         sort_datasets,
-        ):
+    ):
         """
         max_datasets: int
         sort_dataset_items:
@@ -45,25 +46,24 @@ class SortedDatasetSelector(object):
         datasets: dictionary of key-dataset pairs
         """
 
-        if (self.max_datasets is None):
+        if self.max_datasets is None:
             return datasets
 
         sorted_dataset_items = self.sort_datasets(datasets)
 
-        selected_datasets = dict(
-            sorted_dataset_items[:self.max_datasets]
-            )
+        selected_datasets = dict(sorted_dataset_items[: self.max_datasets])
 
         return selected_datasets
 
 
 class RandomDatasetSelector(object):
 
-    def __init__(self,
+    def __init__(
+        self,
         max_datasets,
-        seed = 616,
-        replace = False,
-        ):
+        seed=616,
+        replace=False,
+    ):
 
         self.max_datasets = max_datasets
 
@@ -72,33 +72,31 @@ class RandomDatasetSelector(object):
 
     def __call__(self, datasets):
 
-        if (self.max_datasets is None):
+        if self.max_datasets is None:
             return datasets
 
-        if (self.replace is False) and (len(datasets) <= self.max_datasets): 
+        if (self.replace is False) and (len(datasets) <= self.max_datasets):
             return datasets
 
         all_keys = sorted(datasets.keys())
 
         sample_keys = self.generator.choice(
-            all_keys, 
-            size = self.max_datasets,
-            replace = self.replace,
-            )
+            all_keys,
+            size=self.max_datasets,
+            replace=self.replace,
+        )
 
-        sample_datasets = {
-            dkey : datasets[dkey]
-            for dkey in sample_keys
-        }
+        sample_datasets = {dkey: datasets[dkey] for dkey in sample_keys}
 
         return sample_datasets
 
 
 class SoulmateSelector(object):
 
-    def __init__(self,
+    def __init__(
+        self,
         sort_datasets,
-        ):
+    ):
         """
         sort_datasets: DatasetSorter-like class that returns a sorted list of (key, dataset) tuples
         """
@@ -120,4 +118,4 @@ class SoulmateSelector(object):
         if chosen_dataset is None:
             return {}
 
-        return {self.chosen_dkey : chosen_dataset}
+        return {self.chosen_dkey: chosen_dataset}

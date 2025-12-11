@@ -1,12 +1,15 @@
-import giant.logs as lg
-logger = lg.getLogger(__name__)
-
 import pathlib as pl
 
 try:
+    import pkg_resources
+
     VERSION = pkg_resources.get_distribution("panddas").version
-except:
-    VERSION = '(developer -- see setup.py file)'
+except Exception:
+    VERSION = "(developer -- see setup.py file)"
+
+import giant.logs as lg
+
+logger = lg.getLogger(__name__)
 
 
 ########################################################################################################################
@@ -38,7 +41,7 @@ class DumpConfigToJson(object):
     def write_json(self, records):
 
         import json
-        
+
         json_string = json.dumps(records, indent=2)
 
         with open(str(self.output_path), "w") as f:
@@ -79,26 +82,18 @@ class InputRegex(object):
         # self.ligand_pdb_regex = config_obj.ligand_pdb_regex
 
 
-class InputFilter(object): 
+class InputFilter(object):
 
     def __init__(self, config_obj):
 
         self.validate(config_obj)
 
-        self.pdb = (
-            pl.Path(config_obj.pdb) 
-            if (config_obj.pdb is not None)
-            else None
-            )
+        self.pdb = pl.Path(config_obj.pdb) if (config_obj.pdb is not None) else None
 
     def validate(self, config_obj):
 
         if (config_obj.pdb is not None) and not pl.Path(config_obj.pdb).exists():
-            raise InputError(
-                "filter pdb does not exist: {}".format(
-                    config_obj.pdb
-                    )
-                )
+            raise InputError("filter pdb does not exist: {}".format(config_obj.pdb))
 
 
 class InputReference(object):
@@ -109,23 +104,15 @@ class InputReference(object):
 
         self.pdb = config_obj.pdb
         self.mtz = config_obj.mtz
-        #self.structure_factors = config_obj.structure_factors.split(',')
+        # self.structure_factors = config_obj.structure_factors.split(',')
 
     def validate(self, config_obj):
 
         if (config_obj.pdb is not None) and not pl.Path(config_obj.pdb).exists():
-            raise InputError(
-                "reference pdb does not exist: {}".format(
-                    config_obj.pdb
-                    )
-                )
+            raise InputError("reference pdb does not exist: {}".format(config_obj.pdb))
 
         if (config_obj.mtz is not None) and not pl.Path(config_obj.mtz).exists():
-            raise InputError(
-                "reference mtz does not exist: {}".format(
-                    config_obj.mtz
-                    )
-                )
+            raise InputError("reference mtz does not exist: {}".format(config_obj.mtz))
 
 
 class InputFlags(object):
@@ -135,63 +122,61 @@ class InputFlags(object):
         self.validate(config_obj)
 
         self.ignore_datasets = (
-            config_obj.ignore_datasets.split(',')
+            config_obj.ignore_datasets.split(",")
             if config_obj.ignore_datasets
             else None
-            )
+        )
 
         self.only_datasets = (
-            config_obj.only_datasets.split(',')
-            if config_obj.only_datasets
-            else None
-            )
+            config_obj.only_datasets.split(",") if config_obj.only_datasets else None
+        )
 
-        self.test = (
-            config_obj.test.split(',')
-            if config_obj.test 
-            else None
-            )
+        self.test = config_obj.test.split(",") if config_obj.test else None
 
         self.train = (
-            config_obj.train.split(',')
+            config_obj.train.split(",")
             if config_obj.train
-            else config_obj.ground_state_datasets.split(',')
-            if config_obj.ground_state_datasets
-            else None
+            else (
+                config_obj.ground_state_datasets.split(",")
+                if config_obj.ground_state_datasets
+                else None
             )
+        )
 
         self.not_test = (
-            config_obj.not_test.split(',')
+            config_obj.not_test.split(",")
             if config_obj.not_test
-            else config_obj.exclude_from_z_map_analysis.split(',')
-            if config_obj.exclude_from_z_map_analysis
-            else None
+            else (
+                config_obj.exclude_from_z_map_analysis.split(",")
+                if config_obj.exclude_from_z_map_analysis
+                else None
             )
-        
+        )
+
         self.not_train = (
-            config_obj.not_train.split(',')
+            config_obj.not_train.split(",")
             if config_obj.not_train
-            else config_obj.exclude_from_characterisation.split(',')
-            if config_obj.exclude_from_characterisation
-            else None
+            else (
+                config_obj.exclude_from_characterisation.split(",")
+                if config_obj.exclude_from_characterisation
+                else None
             )
+        )
 
     def validate(self, config_obj):
 
-        if (config_obj.ground_state_datasets and config_obj.train):
-            raise ValueError(
-                "Can supply ground_state_datasets OR train, but not both."
-                )
+        if config_obj.ground_state_datasets and config_obj.train:
+            raise ValueError("Can supply ground_state_datasets OR train, but not both.")
 
-        if (config_obj.exclude_from_z_map_analysis and config_obj.not_test):
+        if config_obj.exclude_from_z_map_analysis and config_obj.not_test:
             raise ValueError(
                 "Can supply exclude_from_z_map_analysis OR not_test, but not both."
-                )
+            )
 
-        if (config_obj.exclude_from_characterisation and config_obj.not_train):
+        if config_obj.exclude_from_characterisation and config_obj.not_train:
             raise ValueError(
                 "Can supply exclude_from_characterisation OR not_train, but not both."
-                )
+            )
 
 
 ########################################################################################################################
@@ -215,18 +200,19 @@ class Output(object):
                 raise InputError(
                     "Output directory already exists but is not a directory: {}".format(
                         config_obj.out_dir
-                        )
                     )
-            if config_obj.overwrite: 
+                )
+            if config_obj.overwrite:
                 import shutil
+
                 shutil.rmtree(config_obj.out_dir)
             else:
                 raise InputError(
                     "Output directory already exists: {}".format(
                         config_obj.out_dir,
-                        )
                     )
-        else: 
+                )
+        else:
             pl.Path(config_obj.out_dir).mkdir()
 
 
@@ -245,7 +231,9 @@ class Params(object):
         self.masks = Masks(config_obj.masks)
         self.statistical_maps = StatisticalMaps(config_obj.statistical_maps)
         self.z_map_analysis = ZMapAnalysis(config_obj.z_map_analysis)
-        self.background_correction = BackgroundCorrection(config_obj.background_correction)
+        self.background_correction = BackgroundCorrection(
+            config_obj.background_correction
+        )
 
 
 class Analysis(object):
@@ -264,17 +252,18 @@ class DiffractionData(object):
         self.validate(config_obj)
 
         self.structure_factors = [
-            tuple(sf.split(',')) 
-            for sf in config_obj.structure_factors
-            ]
+            tuple(sf.split(",")) for sf in config_obj.structure_factors
+        ]
         self.checks = DiffractionDataChecks(config_obj.checks)
         self.scaling = DiffractionDataScaling(config_obj.scaling)
 
     def validate(self, config_obj):
 
         for sf in config_obj.structure_factors:
-            if (',' not in sf):
-                raise InputError("structure_factors must be F,PHI pairs separated by a comma.")
+            if "," not in sf:
+                raise InputError(
+                    "structure_factors must be F,PHI pairs separated by a comma."
+                )
 
 
 class DiffractionDataChecks(object):
@@ -288,7 +277,7 @@ class DiffractionDataChecks(object):
 
     def validate(self, config_obj):
 
-        if config_obj.low_resolution_completeness <= 0.0: 
+        if config_obj.low_resolution_completeness <= 0.0:
             raise InputError("low_resolution_completeness must be greater than 0.0")
 
 
@@ -348,7 +337,9 @@ class ZMapAnalysis(object):
         self.min_blob_volume = config_obj.min_blob_volume
         self.min_blob_z_peak = config_obj.min_blob_z_peak
         self.masks = ZMasks(config_obj.masks)
-        self.agglomerative_hierarchical = AgglomerativeHierarchical(config_obj.agglomerative_hierarchical)
+        self.agglomerative_hierarchical = AgglomerativeHierarchical(
+            config_obj.agglomerative_hierarchical
+        )
 
 
 class ZMasks(object):
@@ -404,14 +395,14 @@ class Events(object):
 class Processing(object):
 
     def __init__(self, config_obj):
-        
+
         self.cpus = config_obj.cpus
         self.backend = config_obj.backend
-        
+
         self.process_shells = config_obj.process_shells
         self.remote_nodes = config_obj.remote_nodes
         self.cpus_per_remote_node = config_obj.cpus_per_remote_node
-        
+
         self.h_vmem = config_obj.h_vmem
         self.m_mem_free = config_obj.m_mem_free
 
@@ -422,7 +413,7 @@ class Processing(object):
 class Settings(object):
 
     def __init__(self, config_obj):
-        
+
         self.verbose = config_obj.verbose
         self.plotting_backend = config_obj.plotting.backend
 
@@ -449,4 +440,4 @@ class Config(object):
         self.params = Params(config_obj.pandda.params)
         self.processing = Processing(config_obj.pandda.processing)
         self.results = Results(config_obj.pandda.results)
-        #self.autobuilding = Autobuilding(config_obj.pandda.autobuilding)
+        # self.autobuilding = Autobuilding(config_obj.pandda.autobuilding)

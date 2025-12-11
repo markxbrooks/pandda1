@@ -1,9 +1,9 @@
+import copy
+
 import giant.logs as lg
-logger = lg.getLogger(__name__)
-
-import copy 
-
 from giant.mulch.dataset import CrystallographicDataset
+
+logger = lg.getLogger(__name__)
 
 
 class MultiCrystalDataset(object):
@@ -12,13 +12,13 @@ class MultiCrystalDataset(object):
 
     def __init__(self, datasets=None, sort_keys=True):
 
-        if (datasets is None):
+        if datasets is None:
             datasets = {}
 
         self.datasets = datasets
-        self.dataset_keys = list(datasets.keys()) # can be reordered as desired
+        self.dataset_keys = list(datasets.keys())  # can be reordered as desired
 
-        if (sort_keys is True):
+        if sort_keys is True:
             self.dataset_keys.sort()
 
         self.populate()
@@ -31,28 +31,24 @@ class MultiCrystalDataset(object):
     def __str__(self):
 
         datasets_strs = [
-            'Dataset {dkey}:\n\t{dataset}'.format(
-                dkey = dkey, 
-                dataset = (
-                    str(self.datasets[dkey])
-                    ).strip('\n').replace('\n','\n\t'),
-                )
+            "Dataset {dkey}:\n\t{dataset}".format(
+                dkey=dkey,
+                dataset=(str(self.datasets[dkey])).strip("\n").replace("\n", "\n\t"),
+            )
             for dkey in self.dataset_keys
         ]
 
         s_ = (
-            'Collection Type: {name}\n'
-            '| Number of Datasets: {n_datasets}\n'
-            '| Datasets:\n'
-            '|\t{datasets}\n'
-            '`---->'
-            ).format(
-            name = self.name,
-            n_datasets = self.n_datasets(),
-            datasets = (
-                '\n'.join(datasets_strs)
-                ).strip('\n').replace('\n','\n|\t'),
-            )
+            "Collection Type: {name}\n"
+            "| Number of Datasets: {n_datasets}\n"
+            "| Datasets:\n"
+            "|\t{datasets}\n"
+            "`---->"
+        ).format(
+            name=self.name,
+            n_datasets=self.n_datasets(),
+            datasets=("\n".join(datasets_strs)).strip("\n").replace("\n", "\n|\t"),
+        )
 
         return s_
 
@@ -67,17 +63,13 @@ class MultiCrystalDataset(object):
         if (self.datasets is None) or (len(self.datasets) == 0):
             return self
 
-        self.resolution_high = min([
-            d.model.crystal.resolution_high
-            for dtag, d
-            in self.datasets.items()
-        ])
+        self.resolution_high = min(
+            [d.model.crystal.resolution_high for dtag, d in self.datasets.items()]
+        )
 
-        self.resolution_low = max([
-            d.model.crystal.resolution_high
-            for dtag, d
-            in self.datasets.items()
-        ])
+        self.resolution_low = max(
+            [d.model.crystal.resolution_high for dtag, d in self.datasets.items()]
+        )
 
         return self
 
@@ -88,12 +80,10 @@ class MultiCrystalDataset(object):
         """Create a new collections of datasets inheriting class from the parent MultiCrystalDataset"""
 
         clone = MultiCrystalDataset(
-            datasets = datasets,
+            datasets=datasets,
         )
 
-        clone.set_reference_dataset(
-            copy.deepcopy(self.reference_dataset)
-            )
+        clone.set_reference_dataset(copy.deepcopy(self.reference_dataset))
 
         return clone
 
@@ -110,10 +100,10 @@ class MultiCrystalDataset(object):
 
         partitioned = partitioner(self.datasets)
 
-        assert hasattr(partitioned, 'keys'), "partitioners must return dict-like object"
+        assert hasattr(partitioned, "keys"), "partitioners must return dict-like object"
 
         result = {
-            p_key : self.new_from_datasets(partitioned[p_key])
+            p_key: self.new_from_datasets(partitioned[p_key])
             for p_key in partitioned.keys()
         }
 

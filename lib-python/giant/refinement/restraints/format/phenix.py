@@ -1,13 +1,11 @@
 import giant.logs as lg
+from giant.structure.formatting import PhenixSelection
+
 logger = lg.getLogger(__name__)
-
-from giant.structure.formatting import (
-    PhenixSelection,
-    )
-
 #
 # Phenix
 #
+
 
 class PhenixFormatter(object):
 
@@ -25,7 +23,7 @@ class PhenixDistanceRestraintFormatter(PhenixFormatter):
         "    sigma = {sigma}\n"
         "    slack = None\n"
         "}}"
-        )
+    )
 
     def __init__(self):
 
@@ -36,17 +34,17 @@ class PhenixDistanceRestraintFormatter(PhenixFormatter):
         r = distance_restraint
 
         return self._string.format(
-            string1 = self.selection.format(r.atom1),
-            string2 = self.selection.format(r.atom2),
-            distance = r.length,
-            sigma = r.sigma,
-            )
+            string1=self.selection.format(r.atom1),
+            string2=self.selection.format(r.atom2),
+            distance=r.length,
+            sigma=r.sigma,
+        )
 
 
 class PhenixOccupancyRestraintFormatter(PhenixFormatter):
 
-    _group_string_1 = 'selection = {selection}'
-    _group_string_2 = 'constrained_group {{\n    {selection_block}\n}}'
+    _group_string_1 = "selection = {selection}"
+    _group_string_2 = "constrained_group {{\n    {selection_block}\n}}"
 
     def __init__(self):
 
@@ -59,57 +57,51 @@ class PhenixOccupancyRestraintFormatter(PhenixFormatter):
         for group in occupancy_restraint.occupancy_groups:
 
             formatted_string = self.format_group(
-                objects = group.objects,
-                )
+                objects=group.objects,
+            )
 
             group_strings.append(formatted_string)
 
         return self.format_block(
-            group_strings = group_strings,
-            )
+            group_strings=group_strings,
+        )
 
     def format_group(self, objects):
 
         group_string = self._group_string_1.format(
-            selection = self.selection.join_or(
-                [
-                    self.selection.format(obj)
-                    for obj in objects
-                    ],
-                extra_join = '\\\n    ',
-                ),
-            )
+            selection=self.selection.join_or(
+                [self.selection.format(obj) for obj in objects],
+                extra_join="\\\n    ",
+            ),
+        )
 
         return group_string
 
     def format_block(self, group_strings):
 
         return self._group_string_2.format(
-            selection_block = (
-                '\n'.join(group_strings).replace('\n','\n    ')
-                ),
-            )
+            selection_block=("\n".join(group_strings).replace("\n", "\n    ")),
+        )
 
 
 class PhenixRestraintCollectionFormatter(object):
 
-    _distance_string = "refinement.geometry_restraints.edits {{\n    {restraints_string}\n}}"
+    _distance_string = (
+        "refinement.geometry_restraints.edits {{\n    {restraints_string}\n}}"
+    )
     _occupancy_string = "refinement.refine.occupancies {{\n    {restraints_string}\n}}"
 
     def __init__(self):
 
-        self.format_distance_restraint = (
-            PhenixDistanceRestraintFormatter()
-            )
+        self.format_distance_restraint = PhenixDistanceRestraintFormatter()
 
-        self.format_occupancy_restraint = (
-            PhenixOccupancyRestraintFormatter()
-            )
+        self.format_occupancy_restraint = PhenixOccupancyRestraintFormatter()
 
-    def __call__(self,
+    def __call__(
+        self,
         restraints_collection,
-        filepath = None,
-        ):
+        filepath=None,
+    ):
 
         rc = restraints_collection
         fp = filepath
@@ -119,8 +111,8 @@ class PhenixRestraintCollectionFormatter(object):
         #
 
         distance_restraints_block = self.format_distance_restraints(
-            distance_restraints = rc.distance_restraints,
-            )
+            distance_restraints=rc.distance_restraints,
+        )
 
         if distance_restraints_block is not None:
             blocks.append(distance_restraints_block)
@@ -128,8 +120,8 @@ class PhenixRestraintCollectionFormatter(object):
         #
 
         occupancy_restraints_block = self.format_occupancy_restraints(
-            occupancy_restraints = rc.occupancy_restraints,
-            )
+            occupancy_restraints=rc.occupancy_restraints,
+        )
 
         if occupancy_restraints_block is not None:
             blocks.append(occupancy_restraints_block)
@@ -137,15 +129,13 @@ class PhenixRestraintCollectionFormatter(object):
         #
 
         output_block = self.format_blocks(
-            blocks = blocks,
-            )
+            blocks=blocks,
+        )
 
         if (fp is not None) and (output_block is not None):
 
-            with open(str(fp), 'a') as fh:
-                fh.write(
-                    output_block
-                    )
+            with open(str(fp), "a") as fh:
+                fh.write(output_block)
 
         return output_block
 
@@ -155,15 +145,12 @@ class PhenixRestraintCollectionFormatter(object):
             return None
 
         restraints_strings = [
-            self.format_distance_restraint(r)
-            for r in distance_restraints
-            ]
+            self.format_distance_restraint(r) for r in distance_restraints
+        ]
 
         return self._distance_string.format(
-            restraints_string = (
-                '\n'.join(restraints_strings).replace('\n','\n    ')
-                ),
-            )
+            restraints_string=("\n".join(restraints_strings).replace("\n", "\n    ")),
+        )
 
     def format_occupancy_restraints(self, occupancy_restraints):
 
@@ -171,19 +158,16 @@ class PhenixRestraintCollectionFormatter(object):
             return None
 
         restraints_strings = [
-            self.format_occupancy_restraint(r)
-            for r in occupancy_restraints
-            ]
+            self.format_occupancy_restraint(r) for r in occupancy_restraints
+        ]
 
         return self._occupancy_string.format(
-            restraints_string = (
-                '\n'.join(restraints_strings).replace('\n','\n    ')
-                ),
-            )
+            restraints_string=("\n".join(restraints_strings).replace("\n", "\n    ")),
+        )
 
     def format_blocks(self, blocks):
 
         if (blocks is None) or (len(blocks) == 0):
             return None
 
-        return '\n'.join(blocks)
+        return "\n".join(blocks)
